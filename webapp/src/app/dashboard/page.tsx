@@ -29,6 +29,8 @@ import {
   LogIn,
   ArrowLeft,
   Mail,
+  Menu,
+  X,
 } from 'lucide-react';
 import ContactModal from '@/components/ContactModal';
 
@@ -654,6 +656,7 @@ export default function ClientDashboard() {
   const [authLoading, setAuthLoading] = useState(false);
   const [activeNav, setActiveNav] = useState('dashboard');
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Org switcher - default to org-demo-acme so data populates immediately for any user
   const [orgs, setOrgs] = useState<OrgOption[]>([{ id: 'org-demo-acme', role: 'owner' }]);
@@ -822,10 +825,20 @@ export default function ClientDashboard() {
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#f8fafc] flex font-sans antialiased text-slate-900 selection:bg-blue-100">
+      {/* Mobile Sidebar Overlay Backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          onClick={() => setMobileSidebarOpen(false)}
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-30 lg:hidden transition-opacity"
+        />
+      )}
+
       {/* ── Sidebar ── */}
-      <aside className="w-60 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col fixed inset-y-0 left-0 z-30 shadow-sm">
+      <aside className={`w-60 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col fixed inset-y-0 left-0 z-40 shadow-xl lg:shadow-sm transition-transform duration-200 ease-in-out ${
+        mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
         {/* Logo Header */}
-        <div className="px-5 py-5 border-b border-slate-100">
+        <div className="px-5 py-5 border-b border-slate-100 flex items-center justify-between">
           <a href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
             <BranchdeckLogo className="w-8 h-8 object-contain rounded-xl flex-shrink-0 shadow-sm" />
             <div>
@@ -833,6 +846,12 @@ export default function ClientDashboard() {
               <p className="text-[11px] font-medium text-slate-500 mt-1">Client Retainer Portal</p>
             </div>
           </a>
+          <button
+            onClick={() => setMobileSidebarOpen(false)}
+            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Navigation Items */}
@@ -843,7 +862,10 @@ export default function ClientDashboard() {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveNav(item.id)}
+                onClick={() => {
+                  setActiveNav(item.id);
+                  setMobileSidebarOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all ${
                   active
                     ? 'bg-blue-50/80 text-blue-700 shadow-sm border border-blue-100'
@@ -895,19 +917,28 @@ export default function ClientDashboard() {
       </aside>
 
       {/* ── Main Canvas ── */}
-      <div className="flex-1 pl-60">
+      <div className="flex-1 pl-0 lg:pl-60 transition-all min-w-0">
         {/* Topbar */}
-        <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 px-8 py-3.5 flex items-center justify-between sticky top-0 z-20 shadow-xs">
-          <div className="flex items-center gap-4">
+        <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-20 shadow-xs flex-wrap sm:flex-nowrap gap-3">
+          <div className="flex items-center gap-3">
+            {/* Hamburger button for mobile */}
+            <button
+              onClick={() => setMobileSidebarOpen(o => !o)}
+              className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors border border-slate-200/80"
+              aria-label="Toggle Navigation"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
             {/* Org Switcher */}
             <div className="relative">
               <button
                 onClick={() => setOrgMenuOpen(o => !o)}
-                className="flex items-center gap-2.5 text-xs font-bold text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3.5 py-2 rounded-xl transition-colors shadow-2xs"
+                className="flex items-center gap-2 text-xs font-bold text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-colors shadow-2xs"
               >
-                <Building2 className="w-4 h-4 text-blue-600" />
-                <span className="max-w-[160px] truncate">{activeOrg || 'org_demo_123'}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                <Building2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <span className="max-w-[120px] sm:max-w-[160px] truncate">{activeOrg || 'org_demo_123'}</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
               </button>
               {orgMenuOpen && orgs.length > 0 && (
                 <div className="absolute top-full left-0 mt-1 bg-white border border-slate-200 shadow-xl rounded-xl py-1.5 min-w-[200px] z-40">
@@ -928,14 +959,14 @@ export default function ClientDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
             {/* Date Range Picker */}
-            <div className="flex items-center gap-1 bg-slate-100/80 rounded-xl p-1 border border-slate-200/60">
+            <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-100/80 rounded-xl p-1 border border-slate-200/60">
               {(['7d', '30d', 'mtd'] as DateRange[]).map(r => (
                 <button
                   key={r}
                   onClick={() => setRange(r)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                  className={`px-2.5 py-1 text-[11px] sm:text-xs font-semibold rounded-lg transition-all ${
                     range === r
                       ? 'bg-white text-blue-700 shadow-xs border border-slate-200/80 font-bold'
                       : 'text-slate-600 hover:text-slate-900'
@@ -950,7 +981,7 @@ export default function ClientDashboard() {
             <button
               onClick={fetchDashboard}
               disabled={loading}
-              className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors border border-slate-200/80 disabled:opacity-40"
+              className="p-1.5 sm:p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-colors border border-slate-200/80 disabled:opacity-40"
               title="Refresh Data"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-blue-600' : ''}`} />
@@ -959,7 +990,7 @@ export default function ClientDashboard() {
             {/* Contact Us Button */}
             <button
               onClick={() => setIsContactModalOpen(true)}
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl transition-all shadow-sm shadow-blue-500/20 cursor-pointer"
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-all shadow-sm shadow-blue-500/20 cursor-pointer whitespace-nowrap"
             >
               <Mail className="w-3.5 h-3.5" />
               <span>Contact Us</span>
@@ -968,7 +999,7 @@ export default function ClientDashboard() {
         </header>
 
         {/* Page Content Body */}
-        <main className="px-8 py-8 max-w-screen-xl mx-auto space-y-6">
+        <main className="px-4 sm:px-8 py-6 sm:py-8 max-w-screen-xl mx-auto space-y-6 min-w-0">
           {/* Error Banner */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-3.5 text-xs font-medium text-red-700 flex items-center gap-3 shadow-xs">
@@ -983,20 +1014,20 @@ export default function ClientDashboard() {
           {activeNav === 'dashboard' && (
             <>
               {/* Header Title */}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Dashboard Overview</h1>
-                  <p className="text-xs text-slate-500 font-medium mt-1">
+                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Dashboard Overview</h1>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
                     AI integration retainer metrics · {range === 'mtd' ? 'Month to date' : `Last ${range}`}
                   </p>
                 </div>
                 {isSpikeSafe ? (
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-3.5 py-1.5 rounded-full shadow-2xs">
+                  <span className="self-start sm:self-auto flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-3.5 py-1.5 rounded-full shadow-2xs">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                     Spend Healthy · No Spikes
                   </span>
                 ) : (
-                  <span className="flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 border border-red-200/80 px-3.5 py-1.5 rounded-full shadow-2xs">
+                  <span className="self-start sm:self-auto flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 border border-red-200/80 px-3.5 py-1.5 rounded-full shadow-2xs">
                     <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
                     Approaching Cap
                   </span>
@@ -1004,7 +1035,7 @@ export default function ClientDashboard() {
               </div>
 
               {/* KPI Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <KpiCard
                   label="Active Integrations"
                   value={String(activeCount)}

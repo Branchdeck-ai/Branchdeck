@@ -589,8 +589,8 @@ function RealDashboardPreview({ onLoadDemo }: { onLoadDemo: () => void }) {
 
         {/* Dashboard Canvas: Left Sidebar + Main Content */}
         <div className="flex min-h-[480px] bg-[#f8fafc]">
-          {/* Left Sidebar */}
-          <div className="w-52 bg-white border-r border-slate-200 p-4 flex flex-col justify-between flex-shrink-0 text-left">
+          {/* Left Sidebar (Hidden on mobile screens) */}
+          <div className="hidden md:flex w-52 bg-white border-r border-slate-200 p-4 flex-col justify-between flex-shrink-0 text-left">
             <div className="space-y-6">
               {/* Brand Logo */}
               <div className="flex items-center gap-2.5 px-2">
@@ -809,15 +809,15 @@ export default function MarketingLanding({
         : 'bg-transparent'}`}
       initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}>
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 sm:py-4 flex items-center justify-between">
         <div 
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="flex items-center gap-2.5 cursor-pointer select-none group"
+          className="flex items-center gap-2 cursor-pointer select-none group flex-shrink-0"
         >
           <div className="w-7 h-7 rounded-lg flex items-center justify-center overflow-hidden transition-transform group-hover:scale-105">
             <img src="/logo.png" alt="Branchdeck Logo" className="w-7 h-7 object-contain rounded-lg" />
           </div>
-          <span className={`text-[14px] font-bold tracking-tight transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Branchdeck</span>
+          <span className={`text-sm sm:text-[14px] font-bold tracking-tight transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Branchdeck</span>
         </div>
         <nav className="hidden md:flex items-center gap-8">
           {[
@@ -839,22 +839,23 @@ export default function MarketingLanding({
             </a>
           ))}
         </nav>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={() => setIsContactModalOpen(true)}
-              className={`text-[13px] font-bold px-4 py-2 rounded-full border transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`text-xs sm:text-[13px] font-bold px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-full border transition-all flex items-center gap-1 sm:gap-1.5 cursor-pointer ${
                 isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200 hover:text-white' : 'border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100'
               }`}
             >
-              <Mail className="w-3.5 h-3.5 text-blue-500" />
-              <span>Contact Us</span>
+              <Mail className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+              <span className="hidden sm:inline">Contact Us</span>
+              <span className="inline sm:hidden">Contact</span>
             </button>
             <a
               href="/dashboard"
-              className={`text-[13px] font-semibold px-5 py-2.5 rounded-full transition-all shadow-sm flex items-center gap-2 cursor-pointer ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'}`}
+              className={`text-xs sm:text-[13px] font-semibold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full transition-all shadow-sm flex items-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'}`}
             >
-              <BarChart3 className="w-3.5 h-3.5 text-blue-400" />
+              <BarChart3 className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
               <span>View Demo</span>
             </a>
           </div>
@@ -862,7 +863,7 @@ export default function MarketingLanding({
           {/* Theme Toggle Switch */}
           <button
             onClick={toggleDarkMode}
-            className={`relative w-12 h-7 rounded-full p-0.5 transition-colors duration-300 border flex items-center cursor-pointer ${
+            className={`relative w-10 sm:w-12 h-6 sm:h-7 rounded-full p-0.5 transition-colors duration-300 border flex items-center cursor-pointer flex-shrink-0 ${
               isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-neutral-100 border-neutral-350'
             }`}
             aria-label="Toggle theme"
@@ -1795,20 +1796,32 @@ export default function MarketingLanding({
   );
 
   /* ── CARD SWAP PREVIEW SECTION ── */
-  const PreviewCardsSection = () => (
-    <section className="py-32 px-6 bg-neutral-950 relative overflow-hidden">
-      {/* LightRays for premium dark section feel */}
-      <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.35 }}>
-        <LightRays raysOrigin="top-center" raysColor="#3279F9" raysSpeed={0.6} lightSpread={0.9} rayLength={1.4} followMouse={true} mouseInfluence={0.06} pulsating={true} />
-      </div>
-      <div className="relative z-10 max-w-7xl mx-auto">
-        <FadeIn className="text-center mb-16">
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-blue-400 mb-4 block">Live Product Previews</span>
-          <h2 className="text-[clamp(2rem,4vw,3rem)] font-bold text-white tracking-tight">See it in action</h2>
-          <p className="mt-4 text-[15px] text-white/50 max-w-xl mx-auto leading-relaxed">Real views from the Branchdeck Retainer Portal dashboard — live metrics &amp; cost governance.</p>
-        </FadeIn>
-        <div className="flex justify-center" style={{ height: 420 }}>
-          <CardSwap width={580} height={360} cardDistance={60} verticalDistance={65} delay={4500} easing="elastic">
+  const PreviewCardsSection = () => {
+    const [winW, setWinW] = useState(1200);
+    useEffect(() => {
+      setWinW(window.innerWidth);
+      const onResize = () => setWinW(window.innerWidth);
+      window.addEventListener('resize', onResize);
+      return () => window.removeEventListener('resize', onResize);
+    }, []);
+
+    const cardWidth = useMemo(() => Math.min(580, Math.max(300, winW - 40)), [winW]);
+    const cardHeight = winW < 640 ? 380 : 360;
+
+    return (
+      <section className="py-24 sm:py-32 px-4 sm:px-6 bg-neutral-950 relative overflow-hidden">
+        {/* LightRays for premium dark section feel */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', opacity: 0.35 }}>
+          <LightRays raysOrigin="top-center" raysColor="#3279F9" raysSpeed={0.6} lightSpread={0.9} rayLength={1.4} followMouse={true} mouseInfluence={0.06} pulsating={true} />
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto">
+          <FadeIn className="text-center mb-16">
+            <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-blue-400 mb-4 block">Live Product Previews</span>
+            <h2 className="text-[clamp(2rem,4vw,3rem)] font-bold text-white tracking-tight">See it in action</h2>
+            <p className="mt-4 text-[15px] text-white/50 max-w-xl mx-auto leading-relaxed">Real views from the Branchdeck Retainer Portal dashboard — live metrics &amp; cost governance.</p>
+          </FadeIn>
+          <div className="flex justify-center overflow-hidden" style={{ height: cardHeight + 40 }}>
+            <CardSwap width={cardWidth} height={cardHeight} cardDistance={winW < 640 ? 25 : 60} verticalDistance={winW < 640 ? 30 : 65} delay={4500} easing="elastic">
             {/* Card 1: Dashboard Overview & KPI Metrics */}
             <Card>
               <div className="w-full h-full bg-[#f8fafc] text-slate-900 flex flex-col rounded-2xl overflow-hidden border border-slate-200 shadow-2xl select-none text-left">
@@ -2004,6 +2017,7 @@ export default function MarketingLanding({
       </div>
     </section>
   );
+};
 
 
 
