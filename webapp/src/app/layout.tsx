@@ -4,19 +4,20 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://branchdeck.vercel.app'),
-  title: "BranchDeck — AI Codebase Understanding & Visualization Tool",
-  description: "AI-powered codebase intelligence that transforms complex software into interactive maps, call flows, and human-readable documentation. Optimize developer onboarding, legacy code navigation, and dependency graphing.",
+  title: "Branchdeck | AI Feature Integration for Your Existing Codebase",
+  description: "Branchdeck integrates AI search, support agents, and document processing directly into your codebase, matching your patterns and reviewed by your devs.",
   keywords: [
-    "AI codebase understanding",
-    "codebase visualization",
-    "dependency graph",
-    "onboarding developers",
-    "understand legacy code",
-    "architecture visualization",
-    "software dependency map",
-    "VS Code extension",
-    "code navigation",
-    "code documentation automation"
+    "AI integration service",
+    "add AI features to existing codebase",
+    "AI codebase integration",
+    "AI implementation for software teams",
+    "custom AI agent integration",
+    "AI spend monitoring",
+    "AI cost governance",
+    "how to add AI search to my app",
+    "AI integration agency for startups",
+    "AI feature development retainer",
+    "AI cost tracking for engineering teams"
   ],
   alternates: {
     canonical: "https://branchdeck.vercel.app"
@@ -27,16 +28,16 @@ export const metadata: Metadata = {
     apple: '/logo.png',
   },
   openGraph: {
-    title: "BranchDeck — AI Codebase Understanding & Visualization Tool",
-    description: "AI-powered codebase intelligence for modern engineering teams. Understand architecture, trace dependencies, and onboard developers faster.",
+    title: "Branchdeck | AI Feature Integration for Your Existing Codebase",
+    description: "Branchdeck integrates AI search, support agents, and document processing directly into your codebase, matching your patterns and reviewed by your devs.",
     url: "https://branchdeck.vercel.app",
     type: "website",
     images: [{ url: '/logo.png', width: 1024, height: 1024, alt: 'Branchdeck Logo' }]
   },
   twitter: {
     card: "summary_large_image",
-    title: "BranchDeck — AI Codebase Intelligence",
-    description: "Understand any codebase instantly.",
+    title: "Branchdeck | AI Feature Integration for Your Existing Codebase",
+    description: "Branchdeck integrates AI search, support agents, and document processing directly into your codebase, matching your patterns and reviewed by your devs.",
     images: ['/logo.png']
   },
 };
@@ -69,6 +70,9 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,slnt,wdth,wght,ROND@8..144,-10..0,25..150,400..700,0..100&family=Google+Sans+Code:ital,wght@0,300..700;1,300..700&family=Google+Symbols:opsz,wght,FILL,GRAD,ROND@40..48,300,0..1,0,50&display=swap" rel="stylesheet" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
       </head>
       <body className="min-h-full flex flex-col font-sans">
         <script

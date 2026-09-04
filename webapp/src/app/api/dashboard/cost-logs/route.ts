@@ -1,0 +1,32 @@
+import { NextResponse } from 'next/server';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+
+export async function GET(request: Request) {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const integrationId = searchParams.get('integration_id');
+    const days = searchParams.get('days') || '30';
+
+    const upstream = new URL(`${BACKEND_URL}/api/dashboard/cost-logs`);
+    if (integrationId) upstream.searchParams.set('integration_id', integrationId);
+    upstream.searchParams.set('days', days);
+
+    const res = await fetch(upstream.toString(), {
+      headers: {
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (err: any) {
+    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+  }
+}

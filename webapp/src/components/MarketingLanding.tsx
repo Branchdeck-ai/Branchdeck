@@ -5,11 +5,12 @@ import {
   motion, useScroll, useTransform, AnimatePresence,
   useMotionValue, useSpring, useInView, Variants,
 } from 'framer-motion';
+import ContactModal from '@/components/ContactModal';
 import {
   GitBranch, Compass, BookOpen, Search, ArrowRight, CheckCircle2, X, Check, Code, Layers,
   ShieldCheck, FileText, GraduationCap, Sparkles, Play, ChevronDown, ChevronRight, ShieldAlert,
   Terminal, Radio, Zap, Globe, Users, Network, Map, FileSearch, BarChart3, GitMerge, Eye, Cpu, Star, Menu,
-  MessageSquare, GitFork, Files, Boxes, Box, Columns, MoreHorizontal,
+  MessageSquare, GitFork, Files, Boxes, Box, Columns, MoreHorizontal, Mail, Activity, Settings, GitPullRequest
 } from 'lucide-react';
 import DotGrid from './DotGrid';
 import ScrollVelocity from './ScrollVelocity';
@@ -217,107 +218,174 @@ function MagneticBtn({ children, className = '', onClick }: {
 const TYPING_WORDS = ["Codebase", "Repository", "Dependency", "Service", "System"];
 
 const FEATURES = [
-  { icon: <Network className="w-5 h-5" />, title: 'Interactive Call Flow', desc: 'Trace function calls in real-time with live collaborator avatars highlighting active developer edits.', color: '#4285F4' },
-  { icon: <BookOpen className="w-5 h-5" />, title: 'Architecture Walkthrough', desc: 'Generate dynamic narratives of codebase logic for features, files, or custom queries.', color: '#34A853' },
-  { icon: <ShieldAlert className="w-5 h-5" />, title: 'Impact Analysis', desc: 'Simulate refactoring risk, counting affected files, services, and team ownership before committing code.', color: '#EA4335' },
-  { icon: <Map className="w-5 h-5" />, title: 'Project Map', desc: 'Toggle between logical feature folders and directory trees, visualizing who is working in each folder.', color: '#FBBC04' },
-  { icon: <FileSearch className="w-5 h-5" />, title: 'Natural Language Search', desc: 'Query your repository context to locate precise lines of code and trace downstream impacts.', color: '#9C27B0' },
+  { icon: <Search className="w-5 h-5" />, title: 'AI-Powered Search', desc: 'Semantic search over your product\'s own data, wired into your existing UI and auth, not a separate widget bolted on top.', color: '#4285F4' },
+  { icon: <MessageSquare className="w-5 h-5" />, title: 'Support & Ops Agents', desc: 'AI agents that handle first-line support or internal ops tasks, built against your actual data models and permission structure.', color: '#34A853' },
+  { icon: <FileText className="w-5 h-5" />, title: 'Document Processing', desc: 'Automated extraction, classification, and routing for the documents your business already handles, matched to your existing pipeline, not a rebuild of it.', color: '#EA4335' },
+  { icon: <BarChart3 className="w-5 h-5" />, title: 'Spend Governance Dashboard', desc: 'Real-time visibility into what every AI feature costs to run, broken down by feature, with alerts before spend spikes.', color: '#FBBC04' },
 ];
 
 const HOW_IT_WORKS = [
-  { step: '01', title: 'Connect Your Codebase', desc: 'Install the VS Code extension or paste a GitHub URL. Indexed in seconds.', icon: <GitBranch className="w-5 h-5" /> },
-  { step: '02', title: 'Automatic Analysis', desc: 'Maps every function call, dependency, and file relationship automatically.', icon: <Cpu className="w-5 h-5" /> },
-  { step: '03', title: 'Explore Intelligently', desc: 'Navigate, trace, analyze, and narrate — all in one workspace.', icon: <Compass className="w-5 h-5" /> },
+  { step: '01', title: 'We Read Your Repo, Not a Demo', desc: 'Our tree-sitter AST engine parses your actual codebase, including naming conventions, error handling, service boundaries, and test patterns, so what we build looks like your team wrote it.', icon: <GitBranch className="w-5 h-5" /> },
+  { step: '02', title: 'We Build the Integration', desc: 'Search, a support agent, or document processing: whatever the feature, we generate the integration to match what\'s already there, not a generic template.', icon: <Cpu className="w-5 h-5" /> },
+  { step: '03', title: 'Your Team Reviews and Merges', desc: 'We open a pull request. Your developers review it, ask questions, request changes, and merge it themselves. We never touch production.', icon: <GitMerge className="w-5 h-5" /> },
+  { step: '04', title: 'We Monitor What It Costs', desc: 'Once live, our spend governance layer tracks real-time usage and cost per feature, with budget alerts before a runaway session becomes a surprise invoice.', icon: <BarChart3 className="w-5 h-5" /> },
 ];
 
-// Custom per-feature preview illustrations
+// Custom per-feature preview illustrations matching real Branchdeck Retainer Portal UI
 function FeatureRealPreview({ activeFeature }: { activeFeature: number }) {
   const previews = [
-    /* 0 — Interactive Call Flow */
-    <div key="callflow" className="w-full h-full bg-slate-50 flex items-center justify-center p-1.5 relative overflow-hidden select-none">
-      <img
-        src="/preview-callflow.png"
-        alt="Interactive Call Flow Live Dashboard"
-        className="w-full h-full object-contain rounded-xl border border-neutral-200/50 shadow-sm"
-      />
-    </div>,
-
-    /* 1 — AI Story Mode */
-    <div key="story" className="w-full h-full bg-slate-50 flex items-center justify-center p-1.5 relative overflow-hidden select-none">
-      <img
-        src="/preview-story.png"
-        alt="AI Story Mode Live Dashboard"
-        className="w-full h-full object-contain rounded-xl border border-neutral-200/50 shadow-sm"
-      />
-    </div>,
-
-    /* 2 — Impact Analysis */
-    <div key="impact" className="w-full h-full bg-slate-50 flex items-center justify-center p-1.5 relative overflow-hidden select-none">
-      <img
-        src="/preview-impact.png"
-        alt="Impact Analysis Live Dashboard"
-        className="w-full h-full object-contain rounded-xl border border-neutral-200/50 shadow-sm"
-      />
-    </div>,
-
-    /* 3 — Project Map */
-    <div key="map" className="w-full h-full bg-[#F8FAFC] p-4 flex flex-col gap-1 overflow-hidden">
-      <div className="flex items-center gap-2 mb-2">
-        <Map className="w-4 h-4 text-neutral-700" />
-        <span className="text-[11px] font-bold text-neutral-900">Project Map</span>
-        <span className="ml-auto text-[9px] text-neutral-400">E-commerce API</span>
+    /* 0 — AI-Powered Search */
+    <div key="search" className="w-full h-full bg-[#f8fafc] text-slate-900 p-5 flex flex-col justify-between text-left select-none font-sans">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <div className="text-xs font-black text-slate-900 tracking-tight">AI Semantic Search Integration</div>
+          <div className="text-[10px] text-slate-500 font-medium">Wired into native auth &amp; AST codebase index &bull; org-demo-acme</div>
+        </div>
+        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+          <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Merged to main
+        </span>
       </div>
-      {[
-        { indent: 0, icon: '📁', label: 'src/', expanded: true, count: 6 },
-        { indent: 1, icon: '🔐', label: 'auth/', expanded: true, count: 3, color: '#0EA5E9' },
-        { indent: 2, icon: '📄', label: 'auth.controller.ts', color: '#F97316' },
-        { indent: 2, icon: '📄', label: 'auth.service.ts', color: '#6366F1' },
-        { indent: 2, icon: '📄', label: 'jwt.strategy.ts', color: '#6366F1' },
-        { indent: 1, icon: '🛒', label: 'checkout/', count: 2, color: '#10B981' },
-        { indent: 2, icon: '📄', label: 'checkout.controller.ts', color: '#F97316' },
-        { indent: 2, icon: '📄', label: 'order.service.ts', color: '#6366F1' },
-        { indent: 1, icon: '💳', label: 'payments/', count: 2, color: '#8B5CF6' },
-        { indent: 2, icon: '📄', label: 'payment.service.ts', color: '#6366F1' },
-        { indent: 2, icon: '📄', label: 'stripe.adapter.ts', color: '#10B981' },
-      ].map((item, i) => (
-        <motion.div key={i} initial={{ opacity: 0, x: -6 }} animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: i * 0.04, duration: 0.35 }}
-          className="flex items-center gap-1.5 cursor-default group rounded-md px-1 py-0.5 hover:bg-white transition-colors"
-          style={{ paddingLeft: `${item.indent * 14 + 4}px` }}
-        >
-          <span className="text-[11px]">{item.icon}</span>
-          <span className="text-[10px] font-medium text-neutral-700 flex-1">{item.label}</span>
-          {item.count && <span className="text-[8px] font-bold text-neutral-400 bg-neutral-100 px-1.5 rounded-full">{item.count}</span>}
-        </motion.div>
-      ))}
-    </div>,
 
-    /* 4 — Natural Language Search */
-    <div key="search" className="w-full h-full bg-white p-6 flex flex-col gap-4">
-      <div className="flex items-center gap-2 bg-neutral-950 rounded-xl px-4 py-3">
-        <FileSearch className="w-4 h-4 text-white/40 flex-shrink-0" />
-        <span className="text-[11px] text-white/70 flex-1 font-mono">How does the checkout payment flow work?</span>
-        <div className="w-1.5 h-4 bg-white/60 rounded-sm animate-pulse" />
+      <div className="flex items-center gap-2 bg-slate-900 text-white rounded-xl px-3.5 py-2.5 shadow-sm">
+        <Search className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+        <span className="text-[11px] text-slate-200 flex-1 font-mono">search(&quot;How does customer authentication handle OAuth tokens?&quot;)</span>
+        <span className="text-[9px] font-bold font-mono text-emerald-400 bg-emerald-950 border border-emerald-800 px-2 py-0.5 rounded">99.4% AST Match</span>
       </div>
-      <div className="text-[9px] font-bold text-neutral-400 uppercase">4 results found</div>
-      <div className="flex flex-col gap-2">
+
+      <div className="space-y-1.5 flex-1 my-2">
         {[
-          { file: 'src/checkout/checkout.controller.ts', line: 54, snippet: 'async placeOrder(dto: OrderDto) {', relevance: 98 },
-          { file: 'src/payments/payment.service.ts', line: 24, snippet: 'async processPayment(amount, token) {', relevance: 94 },
-          { file: 'src/payments/stripe.adapter.ts', line: 8, snippet: 'const charge = await stripe.charges.create', relevance: 87 },
-          { file: 'src/orders/order.service.ts', line: 32, snippet: 'async create(createOrderDto: CreateOrderDto)', relevance: 81 },
-        ].map((result, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 + i * 0.07 }}
-            className="border border-neutral-100 rounded-xl p-3 bg-neutral-50/50 hover:bg-white hover:border-neutral-200 transition-all cursor-pointer group"
-          >
-            <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[9px] font-mono text-neutral-500">{result.file}<span className="text-neutral-400">:{result.line}</span></span>
-              <span className="text-[8px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-full">{result.relevance}%</span>
+          { file: 'src/auth/oauth.service.ts:42', snippet: 'async verifyToken(token: string): Promise<UserClaims>', match: '99.4%' },
+          { file: 'src/auth/strategies/google.strategy.ts:18', snippet: 'async validate(accessToken, refreshToken, profile)', match: '98.8%' },
+          { file: 'src/user/user.controller.ts:88', snippet: '@UseGuards(AuthGuard("oauth"))', match: '99.1%' }
+        ].map((r, idx) => (
+          <div key={idx} className="p-2 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-between">
+            <div>
+              <div className="text-[9px] font-mono text-slate-500 font-semibold">{r.file}</div>
+              <code className="text-[10px] font-mono text-slate-900 font-bold">{r.snippet}</code>
             </div>
-            <code className="text-[10px] font-mono text-neutral-800 font-semibold">{result.snippet}</code>
-          </motion.div>
+            <span className="text-[8px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">{r.match}</span>
+          </div>
         ))}
+      </div>
+
+      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[9px] text-slate-500 font-mono">
+        <span>Token Usage: <strong>1.2M tokens</strong> ($58.40)</span>
+        <span className="text-emerald-700 font-bold">Zero Production Bypass</span>
+      </div>
+    </div>,
+
+    /* 1 — Support & Ops Agents */
+    <div key="agents" className="w-full h-full bg-[#f8fafc] text-slate-900 p-5 flex flex-col justify-between text-left select-none font-sans">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <div className="text-xs font-black text-slate-900 tracking-tight">Support &amp; Ops Agent Integration</div>
+          <div className="text-[10px] text-slate-500 font-medium">AST Data Model Verified &bull; First-Line Ops Automation</div>
+        </div>
+        <span className="text-[9px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+          <GitPullRequest className="w-3 h-3 text-blue-600" /> PR #142 Ready
+        </span>
+      </div>
+
+      <div className="space-y-2 flex-1 my-2">
+        <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs space-y-1">
+          <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
+            <span>Incoming Ticket #4821</span>
+            <span className="text-amber-600 font-mono">Priority: High</span>
+          </div>
+          <div className="text-xs font-bold text-slate-900">&quot;User requested invoice refund for subscription #sub_928&quot;</div>
+        </div>
+
+        <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 text-blue-900 space-y-1">
+          <div className="flex items-center justify-between text-[10px] font-bold text-blue-700 font-mono">
+            <span>OpsAgent Action Executed</span>
+            <span>AST Score: 98.8%</span>
+          </div>
+          <div className="text-[11px] leading-relaxed">
+            Parsed <code className="font-mono text-slate-900 font-bold bg-white px-1 py-0.5 rounded border border-blue-200">SubscriptionModel</code>, validated permission boundary <code className="font-mono text-slate-900 font-bold bg-white px-1 py-0.5 rounded border border-blue-200">UserRole.SUPPORT_TIER_1</code>, and opened PR #142 for dev review.
+          </div>
+        </div>
+      </div>
+
+      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[9px] text-slate-500 font-mono">
+        <span>Period Cost: <strong>$64.20</strong> (1.8M tokens)</span>
+        <span className="text-blue-700 font-bold">100% Dev Reviewed &bull; Merges on Approval</span>
+      </div>
+    </div>,
+
+    /* 2 — Document Processing */
+    <div key="docs" className="w-full h-full bg-[#f8fafc] text-slate-900 p-5 flex flex-col justify-between text-left select-none font-sans">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <div className="text-xs font-black text-slate-900 tracking-tight">Document Processing Pipeline</div>
+          <div className="text-[10px] text-slate-500 font-medium">Automated PDF intake, AST schema extraction &amp; auto-PR routing</div>
+        </div>
+        <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+          <CheckCircle2 className="w-3 h-3 text-indigo-600" /> Active Retainer
+        </span>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2.5 my-3">
+        <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-2xs text-center space-y-1">
+          <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Stage 01 &bull; Intake</div>
+          <div className="text-xs font-black text-slate-900">PDF Classification</div>
+          <div className="text-[8px] font-mono text-emerald-600 font-bold bg-emerald-50 py-0.5 rounded border border-emerald-200 mt-1">99.1% Accuracy</div>
+        </div>
+        <div className="p-3.5 rounded-xl bg-blue-50/70 border border-blue-200 shadow-2xs text-center space-y-1">
+          <div className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">Stage 02 &bull; Extraction</div>
+          <div className="text-xs font-black text-blue-950">AST Schema Sync</div>
+          <div className="text-[8px] font-mono text-blue-700 font-bold bg-white py-0.5 rounded border border-blue-200 mt-1">Matched to DB Model</div>
+        </div>
+        <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 shadow-2xs text-center space-y-1">
+          <div className="text-[9px] font-bold text-emerald-600 uppercase tracking-wider">Stage 03 &bull; Routing</div>
+          <div className="text-xs font-black text-emerald-950">Auto-PR Generation</div>
+          <div className="text-[8px] font-mono text-emerald-700 font-bold bg-white py-0.5 rounded border border-emerald-200 mt-1">PR #98 Active</div>
+        </div>
+      </div>
+
+      <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[9px] text-slate-500 font-mono">
+        <span>Token Usage: <strong>410K tokens</strong> ($20.20)</span>
+        <span className="text-emerald-700 font-bold">Zero Cost Spikes Detected</span>
+      </div>
+    </div>,
+
+    /* 3 — Spend Governance Dashboard */
+    <div key="spend" className="w-full h-full bg-[#f8fafc] text-slate-900 p-5 flex flex-col justify-between text-left select-none font-sans">
+      <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <div className="text-xs font-black text-slate-900 tracking-tight">Spend Governance &amp; Token Dashboard</div>
+          <div className="text-[10px] text-slate-500 font-medium">Real-time cost attribution across active retainer features &bull; org-demo-acme</div>
+        </div>
+        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+          <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Spend Healthy &bull; 0 Spikes
+        </span>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2 my-2">
+        <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="text-[8px] font-bold text-slate-400 uppercase">Total Period Spend</div>
+          <div className="text-sm font-black text-slate-900 mt-0.5">$142.80</div>
+          <div className="text-[8px] text-slate-500 font-medium">of $500 cap (28%)</div>
+        </div>
+        <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="text-[8px] font-bold text-slate-400 uppercase">Semantic Search</div>
+          <div className="text-sm font-black text-blue-700 mt-0.5">$58.40</div>
+          <div className="text-[8px] text-slate-500 font-medium">1.2M tokens (41%)</div>
+        </div>
+        <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="text-[8px] font-bold text-slate-400 uppercase">Support Agent</div>
+          <div className="text-sm font-black text-indigo-700 mt-0.5">$64.20</div>
+          <div className="text-[8px] text-slate-500 font-medium">1.8M tokens (45%)</div>
+        </div>
+        <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-2xs">
+          <div className="text-[8px] font-bold text-slate-400 uppercase">Doc Processing</div>
+          <div className="text-sm font-black text-emerald-700 mt-0.5">$20.20</div>
+          <div className="text-[8px] text-slate-500 font-medium">410K tokens (14%)</div>
+        </div>
+      </div>
+
+      <div className="p-2 rounded-xl bg-slate-900 text-white text-[9px] flex items-center justify-between font-mono">
+        <span>Retainer Cap Threshold: $500.00 &bull; Auto-Throttle Safety Active at 90%</span>
+        <span className="text-emerald-400 font-bold">100% Protected</span>
       </div>
     </div>,
   ];
@@ -340,12 +408,12 @@ function FeatureRealPreview({ activeFeature }: { activeFeature: number }) {
 
 
 const USE_CASES = [
-  { title: 'For New Developers', desc: 'Reduce onboarding time by making software architecture easier to understand.', icon: <Users className="w-4 h-4" /> },
-  { title: 'For Staff Engineers', desc: 'Trace function calls and visualize global dependencies before refactoring.', icon: <Network className="w-4 h-4" /> },
-  { title: 'For Engineering Managers', desc: 'Track features and map domains by ownership instead of folder structures.', icon: <Map className="w-4 h-4" /> },
-  { title: 'For Enterprise Teams', desc: 'Maintain automated self-documenting code descriptions across large monorepos.', icon: <Cpu className="w-4 h-4" /> },
-  { title: 'For Open Source Projects', desc: 'Help new contributors orient themselves and submit code with high confidence.', icon: <CheckCircle2 className="w-4 h-4" /> },
-  { title: 'For Legacy Codebases', desc: 'Extract logic flows and write self-documenting code descriptions automatically.', icon: <BookOpen className="w-4 h-4" /> },
+  { title: 'Reads Your Real Repo', desc: 'Tree-sitter AST engine parses your actual codebase, including naming conventions, error handling, service boundaries, and test patterns.', icon: <GitBranch className="w-4 h-4" /> },
+  { title: 'Builds Matching AI Features', desc: 'Generates semantic search, support/ops agents, and document processing written to match your existing patterns.', icon: <Cpu className="w-4 h-4" /> },
+  { title: 'Ships via Pull Requests', desc: 'Branchdeck never touches production. Your developers review and merge every change themselves.', icon: <GitMerge className="w-4 h-4" /> },
+  { title: 'Tracks Cost Once Live', desc: 'Spend governance layer monitors real-time token and API usage per feature, with alerts before spend spikes.', icon: <BarChart3 className="w-4 h-4" /> },
+  { title: 'Client Spend Dashboard', desc: 'Real-time visibility into usage and cost per feature, providing clear monthly metrics.', icon: <CheckCircle2 className="w-4 h-4" /> },
+  { title: '41% Enterprise AI Spend', desc: 'Plugs into implementation and integration, the largest single line item in enterprise AI budgets.', icon: <Sparkles className="w-4 h-4" /> },
 ];
 
 const LOGO_SVG = (
@@ -440,58 +508,19 @@ function Hero({ onLoadDemo, setIsModalOpen, typedWord, isDarkMode }: HeroProps) 
         style={{ background: isDarkMode ? 'radial-gradient(ellipse 85% 65% at 50% 40%, transparent 25%, rgba(7, 9, 19, 0.85) 100%)' : 'radial-gradient(ellipse 85% 65% at 50% 40%, transparent 25%, rgba(255, 255, 255, 0.95) 100%)' }} />
 
       <motion.div style={{ y: heroY, opacity: heroOpacity }} className="relative z-10 text-center px-6 max-w-5xl mx-auto w-full">
-        <motion.div initial={{ opacity: 0, y: 20, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.7, delay: 0.1, ease: EASE_OUT_EXPO }}
-          className={`inline-flex items-center gap-2 border rounded-full px-4 py-1.5 mb-8 shadow-sm transition-colors duration-300 ${isDarkMode ? 'bg-slate-900/90 border-slate-800 text-slate-300' : 'bg-white/85 border-neutral-200 text-neutral-750'}`}>
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-[12px] font-semibold tracking-wide">AI-Powered Codebase Intelligence</span>
-        </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 32, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 1.0, delay: 0.2, ease: EASE_OUT_EXPO }}>
-          <h1 className={`text-[clamp(2.6rem,7vw,6.5rem)] font-bold leading-[1.02] tracking-tight mb-6 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-neutral-900'}`}>
-            Understand Any<br />
-            <span className="inline-block min-w-[2px] text-blue-600">
-              {typedWord}
-              <motion.span
-                animate={{ opacity: [1, 0, 1] }}
-                transition={{ repeat: Infinity, duration: 0.9 }}
-                className="inline-block w-[3px] h-[0.85em] bg-blue-500 ml-1 align-middle rounded-sm"
-              />
-            </span>
+          <h1 className={`text-[clamp(2.4rem,5.5vw,5rem)] font-extrabold leading-[1.05] tracking-tight mb-6 transition-colors duration-300 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            AI Features, Built Directly Into Your Codebase, Not Bolted On
           </h1>
         </motion.div>
 
         <motion.h2 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, delay: 0.38, ease: EASE_OUT_EXPO }}
-          className={`text-[clamp(1rem,1.8vw,1.18rem)] font-normal leading-relaxed max-w-2xl mx-auto mb-12 transition-colors duration-300 ${isDarkMode ? 'text-slate-400' : 'text-neutral-500'}`}>
-          AI-powered codebase intelligence that transforms complex software into interactive maps, call flows, and human-readable documentation.
+          className={`text-[clamp(1rem,1.8vw,1.18rem)] font-normal leading-relaxed max-w-3xl mx-auto mb-10 transition-colors duration-300 ${isDarkMode ? 'text-slate-300' : 'text-neutral-600'}`}>
+          Branchdeck analyzes your actual repo rather than a sandbox and ships AI search, support agents, and document processing that match your existing code patterns. Your developers review and merge every change.
         </motion.h2>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.52, ease: EASE_OUT_EXPO }}
-          className="flex flex-col items-center justify-center">
-          <div className="flex items-center justify-center gap-4 flex-wrap">
-            <MagneticBtn
-              onClick={() => setIsModalOpen(true)}
-              className={`btn-shimmer text-[14px] font-semibold px-8 py-3.5 rounded-full flex items-center gap-2 transition-all shadow-lg group ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20' : 'bg-slate-950 hover:bg-slate-850 text-white shadow-slate-900/20'}`}
-            >
-              Get Started Free
-              <motion.div
-                className="inline-block"
-                animate={{ x: [0, 3, 0] }}
-                transition={{ repeat: Infinity, duration: 1.5 }}
-              >
-                <ArrowRight className="w-4 h-4" />
-              </motion.div>
-            </MagneticBtn>
-          </div>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.6 }}
-            className="text-xs text-neutral-400 mt-4"
-          >
-            {"Works with GitHub · VS Code · Any language"}
-          </motion.p>
-        </motion.div>
       </motion.div>
 
       <motion.div
@@ -531,27 +560,197 @@ function RealDashboardPreview({ onLoadDemo }: { onLoadDemo: () => void }) {
         animate={{ opacity: hovered ? 1 : 0.4 }}
         transition={{ duration: 0.4 }}
         className="absolute -inset-px rounded-2xl pointer-events-none"
-        style={{ background: 'linear-gradient(135deg, rgba(66,133,244,0.3), rgba(52,168,83,0.2), rgba(234,67,53,0.15))', filter: 'blur(12px)' }}
+        style={{ background: 'linear-gradient(135deg, rgba(66,133,244,0.25), rgba(52,168,83,0.2), rgba(99,102,241,0.18))', filter: 'blur(16px)' }}
       />
 
-      {/* Window chrome containing the REAL dashboard image */}
-      <div className="relative bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-[0_25px_70px_rgba(0,0,0,0.16)]">
-        <img 
-          src="/dashboard-screenshot.png" 
-          alt="Branchdeck Real Interactive Codebase Call Flow Dashboard" 
-          className="w-full h-auto object-cover transform transition-transform duration-700 group-hover:scale-[1.01]"
-        />
+      {/* New Light-Mode Retainer Dashboard Chrome Frame */}
+      <div className="relative bg-white rounded-2xl overflow-hidden border border-slate-200/90 shadow-[0_20px_50px_rgba(0,0,0,0.08)] select-none text-slate-900">
+        {/* Top Window Header */}
+        <div className="flex items-center justify-between px-5 py-3 bg-slate-900 text-white border-b border-slate-800">
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" />
+            </div>
+            <span className="ml-3 text-[11px] font-mono text-slate-300 flex items-center gap-2">
+              <GitBranch className="w-3.5 h-3.5 text-blue-400" />
+              Branchdeck Client Retainer Portal &bull; org-demo-acme
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 text-[10px] font-mono">
+            <span className="flex items-center gap-1.5 text-emerald-400 bg-emerald-950/80 border border-emerald-800 px-2.5 py-0.5 rounded-full font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Spend Healthy &bull; $142.80 / $500
+            </span>
+          </div>
+        </div>
+
+        {/* Dashboard Canvas: Left Sidebar + Main Content */}
+        <div className="flex min-h-[480px] bg-[#f8fafc]">
+          {/* Left Sidebar */}
+          <div className="w-52 bg-white border-r border-slate-200 p-4 flex flex-col justify-between flex-shrink-0 text-left">
+            <div className="space-y-6">
+              {/* Brand Logo */}
+              <div className="flex items-center gap-2.5 px-2">
+                <img src="/logo.png" alt="Logo" className="w-7 h-7 object-contain rounded-lg shadow-xs" />
+                <div>
+                  <div className="font-extrabold text-xs text-slate-900 leading-none">Branchdeck</div>
+                  <div className="text-[9px] text-slate-400 font-semibold mt-0.5">Client Portal</div>
+                </div>
+              </div>
+
+              {/* Nav Items */}
+              <div className="space-y-1 text-xs">
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-blue-50 text-blue-700 font-bold border border-blue-100">
+                  <BarChart3 className="w-4 h-4 text-blue-600" />
+                  <span>Dashboard</span>
+                </div>
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 font-medium hover:bg-slate-50">
+                  <Cpu className="w-4 h-4 text-slate-400" />
+                  <span>Integrations</span>
+                </div>
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 font-medium hover:bg-slate-50">
+                  <Activity className="w-4 h-4 text-slate-400" />
+                  <span>Usage &amp; Cost</span>
+                </div>
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 font-medium hover:bg-slate-50">
+                  <GitBranch className="w-4 h-4 text-slate-400" />
+                  <span>Repos</span>
+                </div>
+                <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-slate-600 font-medium hover:bg-slate-50">
+                  <Settings className="w-4 h-4 text-slate-400" />
+                  <span>Settings</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Profile badge */}
+            <div className="flex items-center gap-2 p-2 bg-slate-50 rounded-xl border border-slate-200/80">
+              <div className="w-6 h-6 rounded-full bg-slate-900 text-white font-bold text-[10px] flex items-center justify-center">A</div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-bold text-slate-900 truncate">adelmuhammed786</div>
+                <div className="text-[8px] text-slate-400 truncate">adelmuhammed786@gmail.com</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Dashboard Canvas Body */}
+          <div className="flex-1 p-5 space-y-4 text-left overflow-hidden">
+            {/* Topbar Controls */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-2xs">
+                <span className="text-[11px] font-bold text-slate-700 font-mono">org-demo-acme</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1 bg-slate-200/60 p-0.5 rounded-lg text-[10px] font-bold">
+                  <span className="px-2 py-0.5 bg-white rounded text-blue-700 shadow-2xs">30d</span>
+                  <span className="px-2 py-0.5 text-slate-600">7d</span>
+                  <span className="px-2 py-0.5 text-slate-600">MTD</span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Spend Healthy &bull; No Spikes
+                </span>
+              </div>
+            </div>
+
+            {/* Header Title */}
+            <div>
+              <h3 className="text-lg font-black text-slate-900 tracking-tight">Dashboard Overview</h3>
+              <p className="text-[11px] text-slate-500 font-medium">AI integration retainer overview &bull; org-demo-acme</p>
+            </div>
+
+            {/* 4 KPI Cards Grid */}
+            <div className="grid grid-cols-4 gap-3">
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Active Integrations</div>
+                <div className="text-xl font-black text-slate-900 mt-1">5</div>
+                <div className="text-[9px] text-emerald-600 font-semibold mt-0.5">5 total live</div>
+              </div>
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Requests (30d)</div>
+                <div className="text-xl font-black text-slate-900 mt-1">2,640</div>
+                <div className="text-[9px] text-blue-600 font-semibold mt-0.5">2.6K calls</div>
+              </div>
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Spend This Period</div>
+                <div className="text-xl font-black text-slate-900 mt-1">$142.80</div>
+                <div className="text-[9px] text-slate-500 font-semibold mt-0.5">of $500.00 cap &bull; 28%</div>
+              </div>
+              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Avg Latency</div>
+                <div className="text-xl font-black text-slate-900 mt-1">340ms</div>
+                <div className="text-[9px] text-slate-500 font-semibold mt-0.5">across integrations</div>
+              </div>
+            </div>
+
+            {/* Middle Grid: Spend Chart & Gauge */}
+            <div className="grid grid-cols-12 gap-3">
+              <div className="col-span-8 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-800">Spend Over Time</span>
+                  <span className="text-[9px] text-blue-600 font-bold font-mono">Daily Cost USD</span>
+                </div>
+                <svg viewBox="0 0 400 70" className="w-full h-16 stroke-blue-500 fill-blue-500/10">
+                  <path d="M0,50 Q40,40 80,45 T160,25 T240,30 T320,15 T400,10 L400,70 L0,70 Z" strokeWidth="2" />
+                </svg>
+              </div>
+
+              <div className="col-span-4 bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                <div className="text-[11px] font-bold text-slate-800">Budget Utilization</div>
+                <div className="text-center py-1">
+                  <div className="text-xl font-black text-slate-900 font-mono">28%</div>
+                  <div className="text-[9px] text-slate-400 font-semibold">$142.80 / $500 cap</div>
+                </div>
+                <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div className="h-full bg-blue-600 w-[28%]" />
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Row: Active Integrations Table */}
+            <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-800 border-b border-slate-100 pb-1.5">
+                <span>Active AI Integrations</span>
+                <span className="text-[9px] text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">5 Features Live</span>
+              </div>
+              <div className="space-y-1.5 text-xs">
+                {[
+                  { name: 'AI Semantic Search', type: 'Vector Search', status: 'Merged to main', ast: '99.4%', statusColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                  { name: 'Support & Ops Agent', type: 'Ticket Assistant', status: 'PR #142 Ready', ast: '98.8%', statusColor: 'bg-blue-50 text-blue-700 border-blue-200' },
+                  { name: 'Document Processing', type: 'PDF Pipeline', status: 'Active Retainer', ast: '99.1%', statusColor: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-slate-50/80 border border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900 text-xs">{item.name}</span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-slate-200/60 text-slate-600">{item.type}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] text-slate-500 font-mono">AST match: <strong className="text-slate-900">{item.ast}</strong></span>
+                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${item.statusColor}`}>
+                        {item.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Click overlay */}
+      {/* Hover Click Overlay */}
       <motion.div
         animate={{ opacity: hovered ? 1 : 0 }}
         transition={{ duration: 0.25 }}
-        className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl"
-        style={{ background: 'rgba(0,0,0,0.06)' }}
+        className="absolute inset-0 flex items-center justify-center pointer-events-none rounded-2xl backdrop-blur-[2px]"
+        style={{ background: 'rgba(7, 9, 19, 0.45)' }}
       >
-        <div className="bg-neutral-950 text-white text-[13px] font-bold px-6 py-3 rounded-full flex items-center gap-2 shadow-2xl">
-          <Play className="w-4 h-4" /> Open Live Dashboard
+        <div className="bg-white text-slate-900 text-[13px] font-bold px-6 py-3 rounded-full flex items-center gap-2 shadow-2xl transform transition-transform group-hover:scale-105">
+          <Play className="w-4 h-4 text-blue-600 fill-blue-600" /> Open Live Dashboard
         </div>
       </motion.div>
     </div>
@@ -571,6 +770,7 @@ export default function MarketingLanding({
   session, repoUrl, setRepoUrl, analyzing, onAnalyze, onLoadDemo, onSignIn, onSignOut, onOpenRepoPicker,
 }: MarketingLandingProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
@@ -579,7 +779,7 @@ export default function MarketingLanding({
   const { scrollY, scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
   const typedWord = useTypingAnimation(TYPING_WORDS);
-  const marqueeTexts = useMemo(() => ['Branchdeck ✦', 'Visual Call Flow ✦', 'Refactor Risk Analysis ✦'], []);
+  const marqueeTexts = useMemo(() => ['Branchdeck ✦', 'AI-Powered Search ✦', 'Support & Ops Agents ✦', 'Document Processing ✦', 'Spend Governance ✦'], []);
 
   const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -621,10 +821,10 @@ export default function MarketingLanding({
         </div>
         <nav className="hidden md:flex items-center gap-8">
           {[
-            { label: 'Product', target: '#product' },
-            { label: 'Features', target: '#features' },
-            { label: 'Solutions', target: '#solutions' },
-            { label: 'VS Code', target: '#vscode' },
+            { label: 'How It Works', target: '#how-it-works' },
+            { label: 'What We Build', target: '#what-we-build' },
+            { label: 'Pricing', target: '#pricing' },
+            { label: 'Case Studies', target: '#case-studies' },
             { label: 'FAQ', target: '#faq' }
           ].map(item => (
             <a key={item.label} href={item.target}
@@ -640,52 +840,24 @@ export default function MarketingLanding({
           ))}
         </nav>
         <div className="flex items-center gap-3">
-          <span className={`hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold border transition-colors ${
-            isDarkMode ? 'bg-emerald-950/60 border-emerald-800/80 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-          }`}>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            v1.0 Live
-          </span>
-
-          {session ? (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  if (onOpenRepoPicker) onOpenRepoPicker();
-                  else onAnalyze(repoUrl);
-                }}
-                className="text-[12px] font-bold bg-slate-950 text-white hover:bg-slate-850 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100 px-4.5 py-2 rounded-full transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
-              >
-                <span>Launch Dashboard</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-              {onSignOut && (
-                <button
-                  onClick={onSignOut}
-                  className={`text-[12px] font-semibold transition-colors px-3 py-2 rounded-full cursor-pointer ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
-                >
-                  Sign Out
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              {onSignIn && (
-                <button
-                  onClick={onSignIn}
-                  className={`hidden md:block text-[13px] font-semibold transition-colors px-4 py-2 rounded-full cursor-pointer ${isDarkMode ? 'text-slate-300 hover:text-white hover:bg-slate-900' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
-                >
-                  Sign In
-                </button>
-              )}
-              <MagneticBtn
-                onClick={() => onSignIn ? onSignIn() : setIsModalOpen(true)}
-                className={`text-[13px] font-semibold px-5 py-2.5 rounded-full transition-all shadow-sm flex items-center gap-2 cursor-pointer ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'}`}
-              >
-                Get Started
-              </MagneticBtn>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsContactModalOpen(true)}
+              className={`text-[13px] font-bold px-4 py-2 rounded-full border transition-all flex items-center gap-1.5 cursor-pointer ${
+                isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200 hover:text-white' : 'border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <Mail className="w-3.5 h-3.5 text-blue-500" />
+              <span>Contact Us</span>
+            </button>
+            <a
+              href="/dashboard"
+              className={`text-[13px] font-semibold px-5 py-2.5 rounded-full transition-all shadow-sm flex items-center gap-2 cursor-pointer ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'}`}
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-blue-400" />
+              <span>View Demo</span>
+            </a>
+          </div>
 
           {/* Theme Toggle Switch */}
           <button
@@ -733,7 +905,7 @@ export default function MarketingLanding({
 
   /* ── TAGLINE BAND ── */
   const TaglineBand = () => {
-    const quoteWords = "Branchdeck is your AI codebase intelligence platform, letting any developer instantly understand and navigate complex software.".split(' ');
+    const quoteWords = "Branchdeck analyzes your actual repo — not a sandbox — and ships AI search, support agents, and document processing that match your existing code patterns.".split(' ');
     const ref = useRef<HTMLDivElement>(null);
     const isInView = useInView(ref, { once: true, margin: '-60px' });
     return (
@@ -774,10 +946,10 @@ export default function MarketingLanding({
     <section id="features" className={`py-44 px-6 transition-colors duration-300 bg-white`}>
       <div className="max-w-7xl mx-auto">
         <FadeIn className="text-center mb-24">
-          <span className={`text-[11px] font-bold uppercase tracking-[0.15em] mb-4 block transition-colors text-slate-400`}>Built for Modern Engineering Teams</span>
-          <h2 className={`text-[clamp(2rem,4vw,3.2rem)] font-bold tracking-tight leading-tight transition-colors text-slate-900`}>Everything you need to<br />understand large codebases</h2>
+          <span className={`text-[11px] font-bold uppercase tracking-[0.15em] mb-4 block transition-colors text-slate-400`}>CAPABILITIES</span>
+          <h2 className={`text-[clamp(2rem,4vw,3.2rem)] font-bold tracking-tight leading-tight transition-colors text-slate-900`}>Built for Engineering Teams Who Need AI That Fits</h2>
           <p className={`mt-5 text-[16px] font-normal leading-relaxed max-w-2xl mx-auto transition-colors text-slate-600`}>
-            From architecture visualization to dependency tracking and AI-powered code explanations, BranchDeck gives every engineer complete context before writing code.
+            Four core integration offerings built directly into your repository.
           </p>
         </FadeIn>
 
@@ -855,86 +1027,52 @@ export default function MarketingLanding({
       </div>
     </section>
   );
-  /* ── PERFECT FOR ── */
+  /* ── PERFECT FOR (WHO IT'S FOR) ── */
   const PerfectFor = () => (
     <section className={`py-24 px-6 border-t border-b transition-colors duration-300 ${isDarkMode ? 'bg-[#070913] border-slate-900' : 'bg-white border-neutral-200/50'}`}>
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <FadeIn className="text-center mb-16">
           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest mb-4 border transition-colors ${
             isDarkMode 
               ? 'bg-blue-950/60 border-blue-800/80 text-blue-400' 
               : 'bg-blue-50 border-blue-200/80 text-blue-600 shadow-sm'
           }`}>
-            FEATURES
+            TARGET AUDIENCE
           </span>
           <h2 className={`text-[clamp(2.2rem,4vw,3.2rem)] font-extrabold tracking-tight transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            Perfect For
+            Who It's For
           </h2>
-          <p className={`mt-3 text-[15px] font-medium max-w-xl mx-auto leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            BranchDeck adapts to the way every engineering team works.
+          <p className={`mt-3 text-[15px] font-medium max-w-2xl mx-auto leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+            Engineering teams with a real, non-trivial codebase who want to ship AI features safely.
           </p>
         </FadeIn>
 
-        {/* Row 1: 4 Cards */}
         <motion.div 
           variants={staggerContainer} 
           initial="hidden" 
           whileInView="visible" 
           viewport={{ once: true }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
           {[
-            { icon: <Code className="w-4 h-4" />, title: "Software Engineering Teams", desc: "Understand and onboard faster with complete codebase context." },
-            { icon: <Layers className="w-4 h-4" />, title: "DevOps & SRE Teams", desc: "Visualize dependencies and streamline system operations." },
-            { icon: <ShieldCheck className="w-4 h-4" />, title: "Product Engineering", desc: "Make informed decisions with clarity across the stack." },
-            { icon: <Users className="w-4 h-4" />, title: "New Team Members", desc: "Onboard in minutes and become productive from day one." }
+            { icon: <GitBranch className="w-5 h-5" />, title: "Real Production Codebases", desc: "Teams with non-trivial software stacks who need native AI features built into existing architectures." },
+            { icon: <ShieldAlert className="w-5 h-5" />, title: "Zero Architecture Risk", desc: "Teams who don't trust generic AI tools not to break their service boundaries or impose weird abstractions." },
+            { icon: <Zap className="w-5 h-5" />, title: "Fast & Cost-Effective", desc: "Teams who want AI features without the heavy cost or slowness of hiring a traditional dev agency." }
           ].map((item, i) => (
             <motion.div key={i} variants={staggerItem}
-              whileHover={{ y: -4, boxShadow: isDarkMode ? '0 12px 30px rgba(0,0,0,0.4)' : '0 12px 30px rgba(0,0,0,0.06)' }}
+              whileHover={{ y: -4 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className={`p-5 border rounded-2xl flex items-start gap-3.5 text-left transition-colors duration-300 ${
+              className={`p-6 border rounded-2xl flex flex-col items-start gap-4 text-left transition-colors duration-300 ${
                 isDarkMode ? 'bg-[#0E1220] border-slate-800/90 shadow-md hover:border-slate-700' : 'bg-white border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)]'
               }`}>
-              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0 shadow-sm mt-0.5 ${
-                isDarkMode ? 'bg-emerald-950/60 border-emerald-800/80 text-emerald-400' : 'bg-emerald-50 border-emerald-200/60 text-emerald-600'
+              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center flex-shrink-0 shadow-sm ${
+                isDarkMode ? 'bg-blue-950/60 border-blue-800/80 text-blue-400' : 'bg-blue-50 border-blue-200/60 text-blue-600'
               }`}>
                 {item.icon}
               </div>
               <div>
-                <h3 className={`text-[13px] font-bold tracking-tight mb-1 transition-colors ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{item.title}</h3>
-                <p className={`text-[11px] leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.desc}</p>
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* Row 2: 3 Centered Cards */}
-        <motion.div 
-          variants={staggerContainer} 
-          initial="hidden" 
-          whileInView="visible" 
-          viewport={{ once: true }}
-          className="flex flex-wrap justify-center gap-4 mt-4"
-        >
-          {[
-            { icon: <Search className="w-4 h-4" />, title: "Technical Leads", desc: "Get deep insights and trace complex logic quickly." },
-            { icon: <FileText className="w-4 h-4" />, title: "Engineering Managers", desc: "Track progress, reduce risk and improve team efficiency." },
-            { icon: <GraduationCap className="w-4 h-4" />, title: "Students & Educators", desc: "Learn, explore and understand real-world codebases." }
-          ].map((item, i) => (
-            <motion.div key={i} variants={staggerItem}
-              whileHover={{ y: -4, boxShadow: isDarkMode ? '0 12px 30px rgba(0,0,0,0.4)' : '0 12px 30px rgba(0,0,0,0.06)' }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-              className={`p-5 border rounded-2xl flex items-start gap-3.5 text-left w-full sm:w-[calc(50%-8px)] lg:w-[360px] transition-colors duration-300 ${
-                isDarkMode ? 'bg-[#0E1220] border-slate-800/90 shadow-md hover:border-slate-700' : 'bg-white border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.02)]'
-              }`}>
-              <div className={`w-9 h-9 rounded-xl border flex items-center justify-center flex-shrink-0 shadow-sm mt-0.5 ${
-                isDarkMode ? 'bg-emerald-950/60 border-emerald-800/80 text-emerald-400' : 'bg-emerald-50 border-emerald-200/60 text-emerald-600'
-              }`}>
-                {item.icon}
-              </div>
-              <div>
-                <h3 className={`text-[13px] font-bold tracking-tight mb-1 transition-colors ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{item.title}</h3>
-                <p className={`text-[11px] leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.desc}</p>
+                <h3 className={`text-[15px] font-bold tracking-tight mb-2 transition-colors ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{item.title}</h3>
+                <p className={`text-[12px] leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{item.desc}</p>
               </div>
             </motion.div>
           ))}
@@ -943,143 +1081,85 @@ export default function MarketingLanding({
     </section>
   );
 
-  /* ── COMPARISON SECTION ── */
+  /* ── COMPARISON SECTION (DIFFERENTIATOR) ── */
   const ComparisonSection = () => (
-    <section className="py-32 px-6 border-t border-b bg-white border-slate-200/60 transition-colors duration-300">
-      <div className="max-w-4xl mx-auto">
+    <section className={`py-32 px-6 border-t border-b transition-colors duration-300 ${isDarkMode ? 'bg-[#080A14] border-slate-900' : 'bg-white border-slate-200/60'}`}>
+      <div className="max-w-6xl mx-auto">
         <FadeIn className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest mb-4 border bg-blue-50 border-blue-200/80 text-blue-600 shadow-sm">
-            WHY BRANCHDECK?
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest mb-4 border transition-colors ${
+            isDarkMode ? 'bg-blue-950/60 border-blue-800/80 text-blue-400' : 'bg-blue-50 border-blue-200/80 text-blue-600 shadow-sm'
+          }`}>
+            WHY BRANCHDECK
           </span>
-          <h2 className="text-[clamp(2.2rem,4vw,3.2rem)] font-extrabold tracking-tight text-slate-900">
-            Why BranchDeck?
+          <h2 className={`text-[clamp(2.2rem,4vw,3.2rem)] font-extrabold tracking-tight transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            Not an AI Agent. Not a Dev Shop. Something in Between.
           </h2>
-          <p className="mt-3 text-[15px] font-medium max-w-xl mx-auto leading-relaxed text-slate-500">
-            We combine powerful code intelligence with an intuitive experience.
-          </p>
         </FadeIn>
 
-        {/* Comparison Table Container */}
-        <FadeIn className="rounded-3xl overflow-hidden border shadow-[0_12px_40px_rgba(0,0,0,0.06)] relative bg-white border-slate-200/90 transition-colors duration-300">
-          {/* Header Row */}
-          <div className="grid grid-cols-2 relative">
-            <div className="bg-slate-950 text-white py-4 px-6 flex items-center justify-center gap-2 text-xs font-bold font-mono tracking-wide border-r border-slate-800">
-              <Layers className="w-4 h-4 text-white" />
-              <span>With BranchDeck</span>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <FadeIn delay={0.1} className={`p-8 rounded-2xl border transition-colors ${isDarkMode ? 'bg-[#0E1220] border-slate-800' : 'bg-white border-slate-200/80 shadow-sm'}`}>
+            <h3 className={`text-lg font-bold mb-3 ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>Generic AI coding tools</h3>
+            <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Fast, but blind to your architecture. You spend more time reviewing than you saved.</p>
+          </FadeIn>
 
-            {/* Center VS Circle */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full border shadow-md flex items-center justify-center text-[10px] font-extrabold tracking-wider bg-white border-slate-200 text-blue-600">
-              VS
-            </div>
+          <FadeIn delay={0.2} className={`p-8 rounded-2xl border transition-colors ${isDarkMode ? 'bg-[#0E1220] border-slate-800' : 'bg-white border-slate-200/80 shadow-sm'}`}>
+            <h3 className={`text-lg font-bold mb-3 ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>Traditional dev agencies</h3>
+            <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>Careful, but slow and expensive, with no AI-native workflow to speed integration up.</p>
+          </FadeIn>
 
-            <div className="py-4 px-6 flex items-center justify-center text-xs font-bold font-mono tracking-wide bg-slate-100/90 text-slate-700">
-              Without BranchDeck
-            </div>
-          </div>
-
-          {/* Comparison Rows */}
-          <div className="divide-y divide-slate-100">
-            {[
-              {
-                with: "Visualize the entire codebase in seconds",
-                without: "Spend hours reading through files and docs"
-              },
-              {
-                with: "AI explains complex logic in simple terms",
-                without: "Struggle to understand unfamiliar code"
-              },
-              {
-                with: "Instant impact analysis before making changes",
-                without: "Risk unexpected bugs and broken dependencies"
-              },
-              {
-                with: "Powerful search across code, docs & architecture",
-                without: "Juggle multiple tools and lose context"
-              },
-              {
-                with: "Everything in one place, beautifully organized",
-                without: "Scattered information across drives and docs"
-              }
-            ].map((row, idx) => (
-              <div key={idx} className="grid grid-cols-2 text-xs">
-                {/* With BranchDeck */}
-                <div className="py-4 px-6 flex items-center gap-3 font-semibold border-r transition-colors bg-emerald-50/20 text-slate-800 border-slate-100">
-                  <div className="w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 bg-emerald-100 border-emerald-200">
-                    <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-600" />
-                  </div>
-                  <span>{row.with}</span>
-                </div>
-
-                {/* Without BranchDeck */}
-                <div className="py-4 px-6 flex items-center gap-3 font-normal transition-colors bg-rose-50/40 text-slate-600">
-                  <div className="w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0 bg-rose-100 border-rose-200">
-                    <X className="w-3.5 h-3.5 stroke-[3] text-rose-500" />
-                  </div>
-                  <span>{row.without}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </FadeIn>
-
-        {/* Bottom CTA Card */}
-        <FadeIn delay={0.2} className="mt-10">
-          <div className="max-w-2xl mx-auto border p-2.5 pl-6 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center justify-between gap-4 transition-colors bg-white border-slate-200/90">
-            <div className="flex items-center gap-3">
-              <Sparkles className="w-4 h-4 text-blue-500" />
-              <span className="text-xs font-bold transition-colors text-slate-800">
-                Experience the clarity. Ship better software.
-              </span>
-            </div>
-            <button
-              onClick={onLoadDemo}
-              className="text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-sm flex items-center gap-1.5 cursor-pointer hover:gap-2 bg-slate-950 hover:bg-slate-850 text-white"
-            >
-              <span>Join Waitlist</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </FadeIn>
+          <FadeIn delay={0.3} className={`p-8 rounded-2xl border transition-colors relative overflow-hidden ${isDarkMode ? 'bg-blue-950/40 border-blue-600/80 text-white shadow-lg' : 'bg-blue-50/50 border-blue-300 shadow-md'}`}>
+            <div className="text-[10px] font-extrabold uppercase tracking-widest text-blue-500 mb-2">Branchdeck Approach</div>
+            <h3 className={`text-lg font-bold mb-3 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Branchdeck</h3>
+            <p className={`text-sm leading-relaxed ${isDarkMode ? 'text-slate-200' : 'text-slate-700'}`}>AST-informed AI integration, built to match your codebase, reviewed by your own team, with ongoing cost visibility built in from day one.</p>
+          </FadeIn>
+        </div>
       </div>
     </section>
   );
 
   /* ── HOW IT WORKS ── */
   const HowItWorks = () => (
-    <section className={`py-36 px-6 transition-colors duration-300 ${isDarkMode ? 'bg-[#0B0C15]' : 'bg-[#FAFAFB]'}`}>
-      <div className="max-w-5xl mx-auto">
+    <section id="how-it-works" className={`py-36 px-6 transition-colors duration-300 ${isDarkMode ? 'bg-[#0B0C15]' : 'bg-[#FAFAFB]'}`}>
+      <div className="max-w-6xl mx-auto">
         <FadeIn className="text-center mb-20">
           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest mb-4 border transition-colors ${
             isDarkMode 
               ? 'bg-blue-950/60 border-blue-800/80 text-blue-400' 
               : 'bg-blue-50 border-blue-200/80 text-blue-600 shadow-sm'
           }`}>
-            SIMPLE SETUP
+            SOLUTION
           </span>
           <h2 className={`text-[clamp(2.2rem,4vw,3.2rem)] font-extrabold tracking-tight transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            How Branchdeck works
+            How Branchdeck Works
           </h2>
           <p className={`mt-3 text-[15px] font-medium max-w-xl mx-auto leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            Zero config. Works with your existing tools. Ready in 60 seconds.
+            Four simple steps to shipping native AI features in your repo.
           </p>
         </FadeIn>
         <div className="relative">
-          <div className={`hidden md:block absolute top-10 left-[16.66%] right-[16.66%] h-px transition-colors duration-300 ${isDarkMode ? 'bg-gradient-to-r from-transparent via-slate-800 to-transparent' : 'bg-gradient-to-r from-transparent via-slate-200 to-transparent'}`} />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {HOW_IT_WORKS.map((step, i) => (
-              <FadeIn key={i} delay={i * 0.12} className="relative text-center">
+              <FadeIn key={i} delay={i * 0.1} className={`relative text-left p-6 rounded-2xl border transition-colors ${isDarkMode ? 'bg-[#0E1220] border-slate-800' : 'bg-white border-slate-200/80 shadow-sm'}`}>
                 <motion.div
-                  whileHover={{ scale: 1.08, rotate: -2, boxShadow: '0 20px 50px rgba(0,0,0,0.12)' }}
+                  whileHover={{ scale: 1.08, rotate: -2 }}
                   transition={{ type: 'spring', stiffness: 280, damping: 20 }}
-                  className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-md cursor-default transition-colors duration-300 ${isDarkMode ? 'bg-blue-600 text-white shadow-blue-900/20' : 'bg-slate-950 text-white shadow-slate-900/15'}`}>
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center mb-5 shadow-md cursor-default transition-colors duration-300 ${isDarkMode ? 'bg-blue-600 text-white' : 'bg-slate-950 text-white'}`}>
                   {step.icon}
                 </motion.div>
-                <div className={`text-[11px] font-extrabold uppercase tracking-widest mb-2 transition-colors ${isDarkMode ? 'text-slate-400' : 'text-blue-600'}`}>{step.step}</div>
-                <h3 className={`text-[17px] font-extrabold mb-3 transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{step.title}</h3>
-                <p className={`text-[13px] leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{step.desc}</p>
+                <div className={`text-[11px] font-extrabold uppercase tracking-widest mb-2 transition-colors ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>{step.step}</div>
+                <h3 className={`text-[15px] font-bold mb-2.5 transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{step.title}</h3>
+                <p className={`text-[12px] leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{step.desc}</p>
               </FadeIn>
             ))}
+          </div>
+          <div className="mt-12 text-center">
+            <MagneticBtn
+              onClick={() => { window.location.href = '/dashboard'; }}
+              className={`text-[14px] font-semibold px-8 py-3.5 rounded-full transition-all shadow-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'}`}
+            >
+              <BarChart3 className="w-4 h-4 text-blue-400 inline-block mr-2" />
+              Open Client Demo Dashboard
+            </MagneticBtn>
           </div>
         </div>
       </div>
@@ -1097,21 +1177,21 @@ export default function MarketingLanding({
                 ? 'bg-blue-950/60 border-blue-800/80 text-blue-400' 
                 : 'bg-blue-50 border-blue-200/80 text-blue-600 shadow-sm'
             }`}>
-              SOLUTIONS MATRIX
+              END-TO-END WORKFLOW
             </span>
             <h2 className={`text-[clamp(2.2rem,3.8vw,3rem)] font-extrabold tracking-tight leading-tight transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              See the whole picture.<br />Dive into the details.
+              How Branchdeck<br />Delivers AI Features
             </h2>
             <p className={`text-[14px] leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-              BranchDeck transforms complex repositories into interactive architecture maps, AI-generated code walkthroughs, dependency graphs, and impact analysis—helping engineering teams understand software faster.
+              From initial repo analysis to live spend monitoring, built for safety, speed, and complete team control.
             </p>
             <div className="pt-2 space-y-3.5">
               {[
-                'Visual software architecture maps',
-                'Interactive software dependency graphs',
-                'Trace function call flows',
-                'Understand legacy code monorepos',
-                'Self-documenting code walkthroughs'
+                'Parses real AST structure & conventions',
+                'Matches your existing service boundaries',
+                'Delivers clean pull requests for your review',
+                'Monitors live token & API spend per feature',
+                'Provides a real-time client spend dashboard'
               ].map((item, i) => (
                 <motion.div key={i} className={`flex items-center gap-3 text-[13px] font-medium transition-colors duration-300 ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}
                   initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }}
@@ -1152,24 +1232,24 @@ export default function MarketingLanding({
   const VsCodeSection = () => {
     const EXTENSION_FEATURES = [
       {
-        icon: <MessageSquare className="w-5 h-5 text-indigo-400" />,
-        title: "Codebase Chat",
-        subtitle: "Ask anything about your code."
+        icon: <BarChart3 className="w-5 h-5 text-blue-400" />,
+        title: "Per-Feature Spend Tracking",
+        subtitle: "Real-time token & API cost per feature."
       },
       {
-        icon: <FileSearch className="w-5 h-5 text-slate-400" />,
-        title: "Go to Definition",
-        subtitle: "Jump to any function or file."
+        icon: <ShieldAlert className="w-5 h-5 text-emerald-400" />,
+        title: "Spend Spike Alerts",
+        subtitle: "Automated alerts before cost overruns."
       },
       {
-        icon: <GitFork className="w-5 h-5 text-slate-400" />,
-        title: "Impact Analysis",
-        subtitle: "See what changes break."
+        icon: <GitBranch className="w-5 h-5 text-indigo-400" />,
+        title: "AST Pattern Match Rate",
+        subtitle: "Audit score matching your repo style."
       },
       {
-        icon: <Sparkles className="w-5 h-5 text-slate-400" />,
-        title: "Smart Context",
-        subtitle: "AI that understands your project."
+        icon: <GitMerge className="w-5 h-5 text-amber-400" />,
+        title: "PR Review & Merge Audit",
+        subtitle: "Complete log of features merged by devs."
       }
     ];
 
@@ -1186,40 +1266,29 @@ export default function MarketingLanding({
                   ? 'bg-indigo-950/60 border-indigo-800/80 text-indigo-400' 
                   : 'bg-blue-50 border-blue-200/80 text-blue-600 shadow-sm'
               }`}>
-                VS CODE EXTENSION
+                CLIENT DASHBOARD &amp; COST GOVERNANCE
               </span>
               <h2 className={`text-[clamp(2.4rem,4.5vw,3.5rem)] font-extrabold tracking-tight leading-[1.1] transition-colors ${
                 isDarkMode ? 'text-white' : 'text-slate-900'
               }`}>
-                Works inside<br />your editor<span className="text-blue-600">.</span>
+                Full Visibility into<br />AI Usage &amp; Spend<span className="text-blue-600">.</span>
               </h2>
               <p className={`text-[14px] font-normal leading-relaxed mt-4 max-w-md transition-colors ${
                 isDarkMode ? 'text-slate-400' : 'text-slate-600'
               }`}>
-                Install the Branchdeck VS Code extension and get AI-powered codebase intelligence without ever leaving your editor.<br />
-                Zero context switching.
+                Track real-time token costs and API usage per integrated feature. Get budget alerts before spend spikes so your AI footprint grows without growing your risk.
               </p>
               <div className="flex items-center gap-3 mt-6 flex-wrap">
-                <a
-                  href="vscode:extension/branchdeck.branchdeck-vscode"
+                <button
+                  onClick={() => { window.location.href = '/dashboard'; }}
                   className={`text-[12px] font-bold px-5 py-2.5 rounded-full flex items-center gap-2 transition-all shadow-md cursor-pointer ${
                     isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20' : 'bg-slate-950 hover:bg-slate-850 text-white shadow-slate-950/15'
                   }`}
                 >
-                  <Box className="w-3.5 h-3.5" />
-                  <span>Install in VS Code</span>
+                  <BarChart3 className="w-3.5 h-3.5" />
+                  <span>Launch Demo Dashboard</span>
                   <ArrowRight className="w-3.5 h-3.5 opacity-70" />
-                </a>
-                <a
-                  href="https://marketplace.visualstudio.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`text-[12px] font-bold px-5 py-2.5 rounded-full border transition-all cursor-pointer ${
-                    isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white' : 'bg-white border-slate-200/90 text-slate-700 hover:text-slate-900 hover:border-slate-300'
-                  }`}
-                >
-                  <span>VS Code Marketplace</span>
-                </a>
+                </button>
               </div>
             </div>
 
@@ -1364,62 +1433,66 @@ export default function MarketingLanding({
                     {/* DYNAMIC FEATURE OVERLAYS FOR THE 4 CARDS */}
                     <AnimatePresence mode="wait">
                       {vscodeActiveTab === 0 && (
-                        <motion.div key="chat" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                          className="mt-4 bg-[#111425] border border-indigo-500/40 rounded-xl p-3.5 text-xs shadow-lg space-y-2 font-sans">
+                        <motion.div key="spend-tracking" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                          className="mt-4 bg-[#0F172A] border border-blue-500/50 rounded-xl p-3.5 text-xs shadow-lg space-y-2 font-sans">
                           <div className="flex items-center justify-between">
-                            <span className="text-indigo-400 font-bold text-[11px] flex items-center gap-1.5">
-                              <MessageSquare className="w-3.5 h-3.5" /> AI Codebase Assistant
+                            <span className="text-blue-400 font-bold text-[11px] flex items-center gap-1.5">
+                              <BarChart3 className="w-3.5 h-3.5" /> Per-Feature Spend Tracking · AuthService
                             </span>
-                            <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-bold">Live AI Answer</span>
+                            <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[9px] font-bold font-mono">$0.028 / call</span>
                           </div>
                           <div className="text-slate-300 text-[11px] leading-relaxed">
-                            <div className="text-slate-400 font-mono mb-1">&gt; How is authentication handled in this service?</div>
-                            <span className="text-white font-semibold">AuthService</span> queries <code className="text-amber-300 font-mono">UserRepository.findByEmail</code>, verifies password hash, and issues signed JWT tokens via <code className="text-yellow-300 font-mono">generateToken(user.id)</code>.
+                            <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 border-b border-slate-800 pb-1 mb-1">
+                              <span>30-Day Tokens: <strong className="text-white">14.2K</strong></span>
+                              <span>Feature Cost: <strong className="text-emerald-400">$58.40</strong></span>
+                            </div>
+                            <span className="text-slate-300">Attributed to <strong>AI Semantic Search</strong> integration. Spend rate within healthy threshold.</span>
                           </div>
                         </motion.div>
                       )}
 
                       {vscodeActiveTab === 1 && (
-                        <motion.div key="definition" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                          className="mt-4 bg-indigo-950/90 border border-indigo-500/60 rounded-xl p-3.5 text-xs shadow-lg font-sans">
-                          <div className="text-indigo-300 font-bold text-[11px] flex items-center gap-1.5 mb-1.5">
-                            <FileSearch className="w-3.5 h-3.5 text-indigo-400" /> Go To Definition · Symbol Found
+                        <motion.div key="spend-alerts" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                          className="mt-4 bg-[#062016] border border-emerald-500/50 rounded-xl p-3.5 text-xs shadow-lg space-y-2 font-sans">
+                          <div className="flex items-center justify-between">
+                            <span className="text-emerald-400 font-bold text-[11px] flex items-center gap-1.5">
+                              <ShieldAlert className="w-3.5 h-3.5 text-emerald-400" /> Spend Spike Governance
+                            </span>
+                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[9px] font-bold">0 Spikes Detected</span>
                           </div>
-                          <div className="text-slate-200 text-[11px] font-mono leading-relaxed">
-                            <span className="text-slate-400">Target:</span> <span className="text-emerald-400 font-bold">src/repositories/user.repository.ts:L42</span><br />
-                            <span className="text-purple-300">async</span> <span className="text-yellow-300">findByEmail</span>(email: <span className="text-emerald-300">string</span>): <span className="text-emerald-300">Promise&lt;User | null&gt;</span>
+                          <div className="text-slate-300 text-[11px] leading-relaxed font-mono">
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span>Cap Limit: <strong className="text-slate-200">$500.00</strong></span>
+                              <span>Current Spend: <strong className="text-emerald-300">$142.80 (28%)</strong></span>
+                            </div>
+                            <div className="w-full bg-slate-900 rounded-full h-1.5 mt-1.5 overflow-hidden border border-emerald-950">
+                              <div className="bg-emerald-500 h-full w-[28%]" />
+                            </div>
                           </div>
                         </motion.div>
                       )}
 
                       {vscodeActiveTab === 2 && (
-                        <motion.div key="impact" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                          className="mt-4 bg-[#1A1224] border border-rose-500/40 rounded-xl p-3.5 text-xs shadow-lg space-y-2 font-sans">
+                        <motion.div key="ast-rate" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                          className="mt-4 bg-[#141226] border border-indigo-500/50 rounded-xl p-3.5 text-xs shadow-lg space-y-2 font-sans">
                           <div className="flex items-center justify-between">
-                            <span className="text-rose-400 font-bold text-[11px] flex items-center gap-1.5">
-                              <GitFork className="w-3.5 h-3.5" /> Impact Analysis: AuthService.login
+                            <span className="text-indigo-400 font-bold text-[11px] flex items-center gap-1.5">
+                              <GitBranch className="w-3.5 h-3.5" /> AST Pattern Match Audit Score
                             </span>
-                            <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[9px] font-bold">High Risk (3 Callers)</span>
+                            <span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[9px] font-bold">99.4% Match Rate</span>
                           </div>
-                          <div className="text-[11px] text-slate-300 space-y-1 font-mono">
-                            <div className="flex items-center justify-between">
-                              <span>&bull; <span className="text-amber-300">POST /api/v1/auth/login</span></span>
-                              <span className="text-[9px] text-slate-500">routes/auth.ts:24</span>
+                          <div className="text-[11px] text-slate-300 font-mono space-y-1">
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span>Repo Conventions: <span className="text-emerald-400 font-bold">NestJS Service Pattern</span></span>
+                              <span className="text-slate-400">Tree-Sitter Parsed</span>
                             </div>
-                            <div className="flex items-center justify-between">
-                              <span>&bull; <span className="text-amber-300">SSOAdapter.authenticate</span></span>
-                              <span className="text-[9px] text-slate-500">lib/sso.ts:18</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span>&bull; <span className="text-amber-300">AuthMiddleware.verifySession</span></span>
-                              <span className="text-[9px] text-slate-500">middleware/auth.ts:31</span>
-                            </div>
+                            <div className="text-[10px] text-slate-400">Zero architectural deviation detected across 2.6K service calls.</div>
                           </div>
                         </motion.div>
                       )}
 
                       {vscodeActiveTab === 3 && (
-                        <motion.div key="context" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                        <motion.div key="pr-audit" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                           className="mt-4 bg-[#0D1B2A] border border-blue-500/50 rounded-xl p-3.5 text-xs shadow-lg space-y-2 font-sans">
                           <div className="flex items-center justify-between">
                             <span className="text-blue-400 font-bold text-[11px] flex items-center gap-1.5">
@@ -1453,9 +1526,9 @@ export default function MarketingLanding({
                           type="text"
                           readOnly
                           value={
-                            vscodeActiveTab === 0 ? "Ask anything about your code..." :
-                            vscodeActiveTab === 1 ? "Jump to any function or file..." :
-                            vscodeActiveTab === 2 ? "Analyze change impact for AuthService.login..." :
+                            vscodeActiveTab === 0 ? "Tracking real-time token spend per feature..." :
+                            vscodeActiveTab === 1 ? "Monitoring budget limits & spike alerts..." :
+                            vscodeActiveTab === 2 ? "Auditing AST repo pattern match rate..." :
                             "AI architecture context loaded."
                           }
                           className="bg-transparent text-xs text-slate-300 outline-none w-full cursor-pointer font-sans"
@@ -1485,24 +1558,24 @@ export default function MarketingLanding({
               ? 'bg-blue-950/60 border-blue-800/80 text-blue-400' 
               : 'bg-blue-50 border-blue-200/80 text-blue-600 shadow-sm'
           }`}>
-            BEHIND THE CODE
+            ABOUT BRANCHDECK
           </span>
           <h2 className={`text-[clamp(2.2rem,3.5vw,2.8rem)] font-extrabold tracking-tight leading-tight transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            Built by developers,<br />for developers.
+            Native AI Features,<br />Built Into Your Codebase.
           </h2>
           <p className={`text-[15px] leading-relaxed max-w-xl transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            We built BranchDeck after spending countless hours navigating unfamiliar repositories, tracing dependencies, and trying to understand legacy systems.
+            Branchdeck is a productized AI-integration service for engineering teams who want AI features built directly into their actual codebase, not a generic AI coding tool and not a traditional dev agency.
           </p>
           <p className={`text-[15px] leading-relaxed max-w-xl transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            Our goal is simple: make every codebase understandable in minutes, not weeks. BranchDeck acts as a living, self-documenting intelligence layer for engineering teams around the world.
+            Implementation and integration is 41% of enterprise AI spend. We plug into that real demand with a tree-sitter AST engine, pull-request safety mechanism, and live spend governance dashboard.
           </p>
           <div className="pt-2">
             <motion.button
               whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => onSignIn ? onSignIn() : setIsModalOpen(true)}
+              onClick={() => { window.location.href = '/dashboard'; }}
               className={`btn-shimmer text-[13px] font-semibold px-7 py-3.5 rounded-full transition-all shadow-sm ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'}`}>
-              Get Started
+              Explore Live Retainer Dashboard
             </motion.button>
           </div>
         </FadeIn>
@@ -1531,12 +1604,12 @@ export default function MarketingLanding({
   );
   const FaqSection = () => {
     const faqs = [
-      { q: "Does BranchDeck support any programming language?", a: "Yes! BranchDeck is language-agnostic. It parses AST structures for TypeScript, JavaScript, Python, Go, Rust, Java, C++, Ruby, PHP, and more to map function scopes and import paths." },
-      { q: "How does BranchDeck analyze a repository?", a: "BranchDeck runs local or secure cloud-based static analysis to trace imports, call patterns, references, and symbol paths. No compilation is required, allowing it to instantly generate software architecture maps." },
-      { q: "Does BranchDeck work with monorepos?", a: "Absolutely. BranchDeck indexes package workspaces, workspaces directories, and cross-package dependencies. It tracks downstream risks across your entire monorepo workspace." },
-      { q: "Can I use BranchDeck inside VS Code?", a: "Yes. In addition to our web interface, our native VS Code extension brings codebase maps, dependency graphs, and AI narrative tools directly into your editor panel." },
-      { q: "Is my source code uploaded?", a: "No. All analysis can be run entirely locally or using end-to-end encrypted indexing. Your source code is never stored on our servers nor used to train public LLM models." },
-      { q: "Can teams collaborate?", a: "Yes. Teams can share interactive maps, logic narratives, and PR dependency reviews, enabling engineers to sync context instantly and debug codebase paths collectively." }
+      { q: "How is Branchdeck different from AI coding assistants like Copilot or Cursor?", a: "Those tools help your developers write code faster. Branchdeck is a service that plans, builds, and delivers complete AI feature integrations (search, agents, document processing) matched to your existing codebase, with your team reviewing the result." },
+      { q: "Do you need access to our production systems?", a: "No. We work against your repository and open pull requests. Your team controls review and merge at every step." },
+      { q: "What does the free demo include?", a: "One real integration, built end-to-end on your actual repository, so you can evaluate code quality and fit before any commitment." },
+      { q: "How do you handle the cost of AI features once they're live?", a: "Every integration ships with spend tracking. You get real-time visibility into token and API cost per feature, with alerts before spend spikes unexpectedly." },
+      { q: "What kinds of codebases do you work with?", a: "Branchdeck's AST engine supports most major languages, including Python, TypeScript, Java, Kotlin, Rust, Go, C#, C/C++, Ruby, and PHP. If you're unsure, ask during your free demo." },
+      { q: "How long does an integration take?", a: "Most single-feature integrations ship within days once we've completed the initial codebase analysis." }
     ];
 
     return (
@@ -1550,8 +1623,8 @@ export default function MarketingLanding({
             }`}>
               FREQUENTLY ASKED QUESTIONS
             </span>
-            <h2 className={`text-[clamp(2.2rem,3.5vw,3rem)] font-extrabold tracking-tight transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>FAQ</h2>
-            <p className={`mt-3 text-[15px] font-medium max-w-xl mx-auto leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Everything you need to know about Branchdeck codebase intelligence.</p>
+            <h2 className={`text-[clamp(2.2rem,3.5vw,3rem)] font-extrabold tracking-tight transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Frequently Asked Questions</h2>
+            <p className={`mt-3 text-[15px] font-medium max-w-xl mx-auto leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>Everything you need to know about Branchdeck AI feature integrations.</p>
           </FadeIn>
 
           <div className="space-y-4">
@@ -1603,31 +1676,25 @@ export default function MarketingLanding({
       <div className="relative z-10 max-w-3xl mx-auto text-center space-y-10">
         <FadeIn>
           <h2 className={`text-[clamp(2.2rem,5vw,4rem)] font-extrabold tracking-tight leading-tight transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-            Ready to understand<br />your codebase?
+            See What Branchdeck Would Build on Your Codebase
           </h2>
         </FadeIn>
         <FadeIn delay={0.15}>
           <p className={`text-[16px] font-normal leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            Connect your VS Code workspace or paste a GitHub URL. Branchdeck indexes everything in seconds.
+            No commitment. No production access. Just a real pull request built against your actual repo.
           </p>
         </FadeIn>
         <FadeIn delay={0.25} className="flex items-center justify-center gap-4 flex-wrap">
-          <MagneticBtn onClick={() => onSignIn ? onSignIn() : setIsModalOpen(true)}
+          <MagneticBtn onClick={() => { window.location.href = '/dashboard'; }}
             className={`btn-shimmer text-[15px] font-semibold px-10 py-4 rounded-full flex items-center gap-2 transition-all shadow-xl group ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20' : 'bg-slate-950 hover:bg-slate-850 text-white shadow-slate-950/20'}`}>
-            Get Started Free
+            Launch Client Retainer Demo Dashboard
             <motion.div animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
               <ArrowRight className="w-4 h-4" />
             </motion.div>
           </MagneticBtn>
-          <motion.button
-            whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(0,0,0,0.07)' }}
-            onClick={onLoadDemo}
-            className={`text-[15px] font-semibold px-10 py-4 rounded-full border transition-all shadow-sm flex items-center gap-2 ${isDarkMode ? 'bg-slate-900 border-slate-800 text-white hover:bg-slate-800/80 hover:border-slate-700' : 'bg-white border-slate-200 text-slate-900 hover:border-slate-300 hover:bg-slate-50'}`}>
-            <Play className="w-4 h-4" /> Live Demo
-          </motion.button>
         </FadeIn>
         <FadeIn delay={0.4} className={`flex justify-center gap-8 text-[10px] font-extrabold uppercase tracking-widest ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-          <span>No credit card</span><span>·</span><span>Works in VS Code</span><span>·</span><span>Any language</span>
+          <span>No production access</span><span>·</span><span>Your devs merge</span><span>·</span><span>AST verified</span>
         </FadeIn>
       </div>
     </section>
@@ -1658,15 +1725,32 @@ export default function MarketingLanding({
           </div>
         </div>
         {[
-          { heading: 'Product', links: ['Features', 'VS Code Extension', 'Integrations', 'Changelog'] },
-          { heading: 'Resources', links: ['Documentation', 'Blog', 'Guides', 'API Reference'] },
-          { heading: 'Company', links: ['About', 'Careers', 'Privacy', 'Terms'] },
+          { heading: 'Product', links: [
+            { label: 'Client Retainer Portal', href: '/dashboard' },
+            { label: 'How It Works', href: '#how-it-works' },
+            { label: 'What We Build', href: '#what-we-build' },
+            { label: 'Pricing', href: '#pricing' },
+            { label: 'Spend Governance', href: '/dashboard' }
+          ]},
+          { heading: 'Company', links: [
+            { label: 'About', href: '#how-it-works' },
+            { label: 'Case Studies', href: '#case-studies' },
+            { label: 'Contact', href: '#faq' }
+          ]},
+          { heading: 'Resources', links: [
+            { label: 'FAQ', href: '#faq' },
+            { label: 'Blog', href: '#faq' }
+          ]},
+          { heading: 'Legal', links: [
+            { label: 'Privacy Policy', href: '#' },
+            { label: 'Terms of Service', href: '#' }
+          ]}
         ].map(col => (
           <div key={col.heading} className="space-y-3">
             <div className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{col.heading}</div>
-            {col.links.map(link => (
-              <a key={link} href="#" className={`block text-[13px] transition-colors relative group w-fit ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
-                {link}
+            {col.links.map(item => (
+              <a key={item.label} href={item.href} className={`block text-[13px] transition-colors relative group w-fit ${isDarkMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}>
+                {item.label}
                 <span className={`absolute -bottom-0.5 left-0 right-0 h-px scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left ${isDarkMode ? 'bg-white' : 'bg-slate-900'}`} />
               </a>
             ))}
@@ -1721,40 +1805,197 @@ export default function MarketingLanding({
         <FadeIn className="text-center mb-16">
           <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-blue-400 mb-4 block">Live Product Previews</span>
           <h2 className="text-[clamp(2rem,4vw,3rem)] font-bold text-white tracking-tight">See it in action</h2>
-          <p className="mt-4 text-[15px] text-white/50 max-w-xl mx-auto leading-relaxed">Real screenshots from the Branchdeck dashboard — no mockups.</p>
+          <p className="mt-4 text-[15px] text-white/50 max-w-xl mx-auto leading-relaxed">Real views from the Branchdeck Retainer Portal dashboard — live metrics &amp; cost governance.</p>
         </FadeIn>
-        <div className="flex justify-center" style={{ height: 380 }}>
-          <CardSwap width={520} height={340} cardDistance={60} verticalDistance={65} delay={4000} easing="elastic">
+        <div className="flex justify-center" style={{ height: 420 }}>
+          <CardSwap width={580} height={360} cardDistance={60} verticalDistance={65} delay={4500} easing="elastic">
+            {/* Card 1: Dashboard Overview & KPI Metrics */}
             <Card>
-              <div className="w-full h-full bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col">
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-                  <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" /><div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" /><div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" /></div>
-                  <span className="ml-2 text-[10px] text-white/50 font-semibold">Interactive Call Flow</span>
+              <div className="w-full h-full bg-[#f8fafc] text-slate-900 flex flex-col rounded-2xl overflow-hidden border border-slate-200 shadow-2xl select-none text-left">
+                {/* Window Chrome Header */}
+                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 text-white border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" /><div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" /><div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" /></div>
+                    <span className="ml-2 text-[10px] text-slate-300 font-mono flex items-center gap-1.5">
+                      <BarChart3 className="w-3.5 h-3.5 text-blue-400" /> Branchdeck Client Portal &bull; Overview
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-bold font-mono text-emerald-400 bg-emerald-950 border border-emerald-800 px-2 py-0.5 rounded-full">
+                    Spend Healthy &bull; $142.80 / $500
+                  </span>
                 </div>
-                <div className="flex-1 flex items-center justify-center p-6">
-                  <img src="/preview-callflow.png" alt="Call Flow Preview" className="w-full h-full object-contain rounded-lg opacity-90" />
+                {/* Card Canvas Body */}
+                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-xs font-black text-slate-900 tracking-tight">Dashboard Overview</div>
+                      <div className="text-[10px] text-slate-500 font-medium">AI integration retainer overview &bull; org-demo-acme</div>
+                    </div>
+                    <span className="text-[9px] font-bold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-md font-mono">Last 30d</span>
+                  </div>
+
+                  {/* 4 KPI Grid */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                      <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Active Integrations</div>
+                      <div className="text-lg font-black text-slate-900 mt-0.5">5</div>
+                      <div className="text-[8px] text-emerald-600 font-semibold">5 total live</div>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                      <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Requests (30d)</div>
+                      <div className="text-lg font-black text-slate-900 mt-0.5">2,640</div>
+                      <div className="text-[8px] text-blue-600 font-semibold">2.6K calls</div>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                      <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Spend This Period</div>
+                      <div className="text-lg font-black text-slate-900 mt-0.5">$142.80</div>
+                      <div className="text-[8px] text-slate-500 font-semibold">of $500 cap &bull; 28%</div>
+                    </div>
+                    <div className="bg-white p-2.5 rounded-xl border border-slate-200 shadow-2xs">
+                      <div className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Avg Latency</div>
+                      <div className="text-lg font-black text-slate-900 mt-0.5">340ms</div>
+                      <div className="text-[8px] text-slate-500 font-semibold">mean latency</div>
+                    </div>
+                  </div>
+
+                  {/* Spend Chart & Utilization Gauge */}
+                  <div className="grid grid-cols-12 gap-2">
+                    <div className="col-span-8 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-800">
+                        <span>Spend Over Time</span>
+                        <span className="text-[8px] text-blue-600 font-mono font-bold">$18.40 daily peak</span>
+                      </div>
+                      <svg viewBox="0 0 400 55" className="w-full h-11 stroke-blue-500 fill-blue-500/10">
+                        <path d="M0,45 Q40,35 80,40 T160,20 T240,25 T320,10 T400,8 L400,55 L0,55 Z" strokeWidth="2" />
+                      </svg>
+                    </div>
+
+                    <div className="col-span-4 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs flex flex-col justify-between">
+                      <div className="text-[10px] font-bold text-slate-800">Budget Utilization</div>
+                      <div className="text-center my-0.5">
+                        <div className="text-base font-black text-slate-900 font-mono">28%</div>
+                        <div className="text-[8px] text-slate-400 font-semibold">$142.80 / $500 cap</div>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div className="h-full bg-blue-600 w-[28%]" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </Card>
+
+            {/* Card 2: Active Integrations & AST Match Table */}
             <Card>
-              <div className="w-full h-full bg-gradient-to-br from-slate-900 to-indigo-950 flex flex-col">
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-                  <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" /><div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" /><div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" /></div>
-                  <span className="ml-2 text-[10px] text-white/50 font-semibold">Architecture Walkthrough</span>
+              <div className="w-full h-full bg-[#f8fafc] text-slate-900 flex flex-col rounded-2xl overflow-hidden border border-slate-200 shadow-2xl select-none text-left">
+                {/* Window Chrome Header */}
+                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 text-white border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" /><div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" /><div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" /></div>
+                    <span className="ml-2 text-[10px] text-slate-300 font-mono flex items-center gap-1.5">
+                      <Cpu className="w-3.5 h-3.5 text-indigo-400" /> Branchdeck Client Portal &bull; Active Integrations
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-bold font-mono text-blue-400 bg-blue-950 border border-blue-800 px-2 py-0.5 rounded-full">
+                    5 Features Live
+                  </span>
                 </div>
-                <div className="flex-1 flex items-center justify-center p-6">
-                  <img src="/preview-story.png" alt="Architecture Walkthrough Preview" className="w-full h-full object-contain rounded-lg opacity-90" />
+                {/* Card Canvas Body */}
+                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <div>
+                      <div className="text-xs font-black text-slate-900 tracking-tight">Active AI Retainer Features</div>
+                      <div className="text-[10px] text-slate-500 font-medium">Tree-sitter AST matched &bull; PR review safety active</div>
+                    </div>
+                    <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                      <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" /> 100% PR Review Safety
+                    </span>
+                  </div>
+
+                  <div className="space-y-2 flex-1">
+                    {[
+                      { name: 'AI Semantic Search', type: 'Vector Search', status: 'Merged to main', ast: '99.4%', statusColor: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+                      { name: 'Support & Ops Agent', type: 'Ticket Assistant', status: 'PR #142 Ready', ast: '98.8%', statusColor: 'bg-blue-50 text-blue-700 border-blue-200' },
+                      { name: 'Document Processing', type: 'PDF Pipeline', status: 'Active Retainer', ast: '99.1%', statusColor: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
+                      { name: 'Codebase Indexer', type: 'Tree-sitter AST', status: 'Synced 2m ago', ast: '100.0%', statusColor: 'bg-slate-100 text-slate-700 border-slate-300' },
+                    ].map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-900 text-[11px]">{item.name}</span>
+                          <span className="text-[8px] font-mono px-1.5 py-0.2 rounded bg-slate-100 text-slate-600">{item.type}</span>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-[9px] text-slate-500 font-mono">AST match: <strong className="text-slate-900">{item.ast}</strong></span>
+                          <span className={`text-[8px] font-bold px-2 py-0.5 rounded-full border ${item.statusColor}`}>
+                            {item.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-2 rounded-lg bg-blue-50/70 border border-blue-100 text-[9px] text-blue-800 flex items-center justify-between font-mono">
+                    <span>Zero production access required. Every change is delivered as a reviewable PR.</span>
+                    <ArrowRight className="w-3 h-3 text-blue-600" />
+                  </div>
                 </div>
               </div>
             </Card>
+
+            {/* Card 3: Per-Feature Spend Governance Breakdown */}
             <Card>
-              <div className="w-full h-full bg-gradient-to-br from-slate-900 to-rose-950 flex flex-col">
-                <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-                  <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" /><div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" /><div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" /></div>
-                  <span className="ml-2 text-[10px] text-white/50 font-semibold">Impact Analysis</span>
+              <div className="w-full h-full bg-[#f8fafc] text-slate-900 flex flex-col rounded-2xl overflow-hidden border border-slate-200 shadow-2xl select-none text-left">
+                {/* Window Chrome Header */}
+                <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 text-white border-b border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <div className="flex gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-[#FF5F57]" /><div className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]" /><div className="w-2.5 h-2.5 rounded-full bg-[#28C840]" /></div>
+                    <span className="ml-2 text-[10px] text-slate-300 font-mono flex items-center gap-1.5">
+                      <ShieldAlert className="w-3.5 h-3.5 text-emerald-400" /> Branchdeck Client Portal &bull; Spend Governance
+                    </span>
+                  </div>
+                  <span className="text-[9px] font-bold font-mono text-emerald-400 bg-emerald-950 border border-emerald-800 px-2 py-0.5 rounded-full">
+                    0 Cost Spikes Detected
+                  </span>
                 </div>
-                <div className="flex-1 flex items-center justify-center p-6">
-                  <img src="/preview-impact.png" alt="Impact Analysis Preview" className="w-full h-full object-contain rounded-lg opacity-90" />
+                {/* Card Canvas Body */}
+                <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <div>
+                      <div className="text-xs font-black text-slate-900 tracking-tight">Per-Feature Token &amp; API Cost Governance</div>
+                      <div className="text-[10px] text-slate-500 font-medium">Real-time attribution &bull; Monthly Retainer Cap $500.00</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-black text-slate-900 font-mono">$142.80</div>
+                      <div className="text-[8px] text-slate-400 font-semibold">28% of budget</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 flex-1">
+                    {[
+                      { feature: 'AI Semantic Search', spend: '$58.40', tokens: '1.2M tokens', pct: '41%' },
+                      { feature: 'Support & Ops Agent', spend: '$64.20', tokens: '1.8M tokens', pct: '45%' },
+                      { feature: 'Document Processing', spend: '$20.20', tokens: '410K tokens', pct: '14%' }
+                    ].map((row, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                        <div>
+                          <div className="font-bold text-slate-900 text-[11px]">{row.feature}</div>
+                          <div className="text-[8px] text-slate-400 font-mono">{row.tokens} &bull; {row.pct} of period spend</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-black text-slate-900 text-xs font-mono">{row.spend}</div>
+                          <div className="text-[8px] font-bold text-emerald-600">Cost Healthy</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-emerald-950 text-emerald-300 border border-emerald-800 text-[9px] flex items-center justify-between font-mono">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Automated spike throttle active at 90% cap threshold ($450.00).
+                    </span>
+                    <span className="font-bold text-white">Active</span>
+                  </div>
                 </div>
               </div>
             </Card>
@@ -1765,6 +2006,136 @@ export default function MarketingLanding({
   );
 
 
+
+  /* ── PRICING SECTION ── */
+  const PricingSection = () => (
+    <section id="pricing" className={`py-32 px-6 transition-colors duration-300 ${isDarkMode ? 'bg-[#060812]' : 'bg-white'}`}>
+      <div className="max-w-6xl mx-auto">
+        <FadeIn className="text-center mb-16 max-w-3xl mx-auto">
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest mb-4 border transition-colors ${
+            isDarkMode ? 'bg-blue-950/60 border-blue-800/80 text-blue-400' : 'bg-blue-50 border-blue-200/80 text-blue-600 shadow-sm'
+          }`}>
+            PRICING &amp; RETAINER
+          </span>
+          <h2 className={`text-[clamp(2.2rem,4vw,3.2rem)] font-extrabold tracking-tight transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            Start Free. Scale on Retainer.
+          </h2>
+          <p className={`mt-4 text-[14px] leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            We build one integration on your actual repo, free, so you can see the fit before committing. From there, most teams move to a retainer that covers ongoing maintenance, new AI feature integrations as you need them, and continuous spend monitoring — so your AI footprint grows without growing your risk.
+          </p>
+        </FadeIn>
+
+        <FadeIn className={`rounded-2xl border overflow-hidden shadow-sm transition-colors ${isDarkMode ? 'bg-[#0E1220] border-slate-800' : 'bg-white border-slate-200'}`}>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm border-collapse">
+              <thead>
+                <tr className={`border-b transition-colors ${isDarkMode ? 'border-slate-800 bg-slate-900/50 text-slate-400' : 'border-slate-200 bg-slate-50 text-slate-500'}`}>
+                  <th className="p-4 font-bold uppercase tracking-wider text-xs">Plan</th>
+                  <th className="p-4 font-bold uppercase tracking-wider text-xs">What's Included</th>
+                  <th className="p-4 font-bold uppercase tracking-wider text-xs">Best For</th>
+                  <th className="p-4 font-bold uppercase tracking-wider text-xs text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y transition-colors ${isDarkMode ? 'divide-slate-800 text-slate-200' : 'divide-slate-200 text-slate-800'}`}>
+                <tr>
+                  <td className="p-4 font-bold">Free Demo</td>
+                  <td className="p-4 text-xs">One integration, built end-to-end on your repo</td>
+                  <td className="p-4 text-xs text-slate-400">Teams evaluating fit</td>
+                  <td className="p-4 text-right">
+                    <button onClick={() => { window.location.href = '/dashboard'; }} className="px-4 py-1.5 rounded-full text-xs font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors cursor-pointer flex items-center gap-1.5 ml-auto">
+                      <span>Try Demo Dashboard</span>
+                      <ArrowRight className="w-3 h-3 opacity-70" />
+                    </button>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="p-4 font-bold">Project</td>
+                  <td className="p-4 text-xs">Single feature integration, fixed scope</td>
+                  <td className="p-4 text-xs text-slate-400">One-off AI feature need</td>
+                  <td className="p-4 text-right">
+                    <button onClick={() => { window.location.href = '/dashboard'; }} className="px-4 py-1.5 rounded-full text-xs font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors cursor-pointer flex items-center gap-1.5 ml-auto">
+                      <span>View Retainer Portal</span>
+                      <ArrowRight className="w-3 h-3 opacity-70" />
+                    </button>
+                  </td>
+                </tr>
+                <tr className={isDarkMode ? 'bg-blue-950/30' : 'bg-blue-50/60'}>
+                  <td className="p-4 font-bold text-blue-500">Retainer</td>
+                  <td className="p-4 text-xs font-medium">Ongoing integrations, maintenance, spend governance dashboard</td>
+                  <td className="p-4 text-xs font-medium">Teams shipping AI features continuously</td>
+                  <td className="p-4 text-right">
+                    <button onClick={() => { window.location.href = '/dashboard'; }} className="px-4 py-1.5 rounded-full text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 ml-auto">
+                      <span>Enter Retainer Portal</span>
+                      <ArrowRight className="w-3 h-3 opacity-70" />
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+
+  /* ── PROBLEM SECTION ── */
+  const ProblemSection = () => (
+    <section className={`py-32 px-6 transition-colors duration-300 ${isDarkMode ? 'bg-[#060812]' : 'bg-[#FAFAFB]'}`}>
+      <div className="max-w-6xl mx-auto">
+        <FadeIn className="text-center mb-16 max-w-3xl mx-auto">
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-widest mb-4 border transition-colors ${
+            isDarkMode ? 'bg-rose-950/60 border-rose-800/80 text-rose-400' : 'bg-rose-50 border-rose-200/80 text-rose-600 shadow-sm'
+          }`}>
+            THE CODEBASE REALITY
+          </span>
+          <h2 className={`text-[clamp(2.2rem,4vw,3.2rem)] font-extrabold tracking-tight transition-colors ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+            Most AI Integrations Don't Survive Contact With a Real Codebase
+          </h2>
+          <p className={`mt-4 text-[14px] leading-relaxed transition-colors ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+            AI coding tools are trained on clean, sandboxed examples. Your codebase isn't clean — it has years of inherited patterns, inconsistent conventions, and business logic nobody wrote down. Generic AI tooling either breaks on contact with that reality, or produces code your team won't trust enough to merge.
+          </p>
+        </FadeIn>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <FadeIn delay={0.1} className={`p-6 rounded-2xl border transition-colors ${isDarkMode ? 'bg-[#0E1220] border-slate-800' : 'bg-white border-slate-200/80 shadow-sm'}`}>
+            <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mb-4">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <h3 className={`text-[15px] font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              "We tried an AI coding agent and it rewrote half our service layer."
+            </h3>
+            <p className={`text-[12px] leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              Generic tools don't understand your architecture — they impose their own.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.2} className={`p-6 rounded-2xl border transition-colors ${isDarkMode ? 'bg-[#0E1220] border-slate-800' : 'bg-white border-slate-200/80 shadow-sm'}`}>
+            <div className="w-9 h-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mb-4">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <h3 className={`text-[15px] font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              "We don't know what our AI features actually cost us."
+            </h3>
+            <p className={`text-[12px] leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              Token spend spirals silently until the invoice arrives.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.3} className={`p-6 rounded-2xl border transition-colors ${isDarkMode ? 'bg-[#0E1220] border-slate-800' : 'bg-white border-slate-200/80 shadow-sm'}`}>
+            <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center mb-4">
+              <GitMerge className="w-5 h-5" />
+            </div>
+            <h3 className={`text-[15px] font-bold mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              "Our devs won't merge code they didn't write and can't explain."
+            </h3>
+            <p className={`text-[12px] leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+              Trust breaks the moment a PR doesn't look like it came from your team.
+            </p>
+          </FadeIn>
+        </div>
+      </div>
+    </section>
+  );
 
   return (
     <div className={`min-h-screen selection:bg-blue-600 selection:text-white relative transition-colors duration-300 ${isDarkMode ? 'bg-[#070913] text-white' : 'bg-white text-slate-900'}`}>
@@ -1788,20 +2159,22 @@ export default function MarketingLanding({
             stiffness={400}
           />
         </div>
-        {Features()}
+        <div id="what-we-build">{Features()}</div>
         {PerfectFor()}
+        {ProblemSection()}
         {ComparisonSection()}
         {HowItWorks()}
+        {PricingSection()}
         {UseCases()}
-        {PreviewCardsSection()}
+        <div id="case-studies">{PreviewCardsSection()}</div>
         <section style={{ height: 360 }} className={`overflow-hidden border-t border-b transition-colors duration-300 ${isDarkMode ? 'border-slate-800' : 'border-neutral-200'}`}>
           <FlowingMenu
             items={[
-              { link: '#features', text: 'Call Flow Graphs', image: '/preview-callflow.png' },
-              { link: '#features', text: 'AI Story Mode', image: '/preview-story.png' },
-              { link: '#features', text: 'Impact Analysis', image: '/preview-impact.png' },
-              { link: '#solutions', text: 'Team Onboarding', image: '/preview-callflow.png' },
-              { link: '#solutions', text: 'Refactor Safety', image: '/preview-impact.png' },
+              { link: '#what-we-build', text: 'AI Semantic Search', image: '/preview-callflow.png' },
+              { link: '#what-we-build', text: 'Support & Ops Agents', image: '/preview-story.png' },
+              { link: '#what-we-build', text: 'Document Processing', image: '/preview-impact.png' },
+              { link: '#how-it-works', text: 'AST Repo Parser', image: '/preview-callflow.png' },
+              { link: '#pricing', text: 'Spend Governance Dashboard', image: '/preview-impact.png' },
             ]}
             speed={18}
             textColor={isDarkMode ? '#ffffff' : '#0a0b0f'}
@@ -1817,6 +2190,10 @@ export default function MarketingLanding({
       </main>
       {Footer()}
       {GetStartedModal()}
+      <ContactModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+      />
     </div>
   );
 }

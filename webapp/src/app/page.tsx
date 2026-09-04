@@ -1051,7 +1051,7 @@ export default function Dashboard() {
           onSignIn={() => openAuth('signin')}
           onSignOut={handleLogOut}
           onOpenRepoPicker={() => setIsRepoModalOpen(true)}
-          onLoadDemo={() => setIsRepoModalOpen(true)}
+          onLoadDemo={() => { window.location.href = '/dashboard'; }}
         />
         <AuthModal
           isOpen={isAuthOpen}

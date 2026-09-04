@@ -200,6 +200,70 @@ class UsageLog(Base):
         Index("idx_usage_org_date", "organization_id", "created_at"),
     )
 
+class Integration(Base):
+    """An AI feature integration delivered into a client repository."""
+    __tablename__ = "integrations"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    repo_id = Column(String(36), ForeignKey("repos.id", ondelete="CASCADE"), nullable=False)
+    organization_id = Column(String(100), nullable=False)
+    name = Column(String(200), nullable=False)
+    # type: search | support_agent | document_processing
+    type = Column(String(50), nullable=False)
+    # status: in_progress | pr_ready | merged | active_retainer
+    status = Column(String(50), nullable=False, default="in_progress")
+    pr_url = Column(String(500), nullable=True)
+    # AST pattern-match score 0.0–1.0 (e.g. 0.994 = 99.4 %).
+    # Nullable: populated by the AST engine on integration delivery; NULL until first analysis.
+    ast_match_score = Column(Float, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_integrations_org", "organization_id"),
+        Index("idx_integrations_repo", "repo_id"),
+    )
+
+
+class CostLog(Base):
+    """Fine-grained token and dollar cost record for each AI integration call.
+
+    Rationale for separate table (vs extending UsageLog):
+    UsageLog tracks generic action counts (query, index) per user/org.
+    CostLog tracks per-integration token throughput and USD cost, which
+    are semantically and structurally distinct. Keeping them separate
+    avoids nullable columns and lets each table evolve independently.
+    """
+    __tablename__ = "cost_logs"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    integration_id = Column(String(36), ForeignKey("integrations.id", ondelete="CASCADE"), nullable=False)
+    tokens_in = Column(Integer, nullable=False, default=0)
+    tokens_out = Column(Integer, nullable=False, default=0)
+    cost_usd = Column(Float, nullable=False, default=0.0)
+    latency_ms = Column(Integer, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_cost_logs_integration", "integration_id"),
+        Index("idx_cost_logs_timestamp", "timestamp"),
+    )
+
+class OrgSettings(Base):
+    """Per-organization configuration and spend governance settings.
+
+    One row per organization_id. Created on first access (get-or-create pattern).
+    Chosen as a separate table rather than extending OrgMembership (user-scoped)
+    or Repository (wrong domain); org-level settings are a distinct concern.
+    """
+    __tablename__ = "org_settings"
+
+    organization_id = Column(String(100), primary_key=True)
+    # Monthly spend cap in USD. Frontend computes utilization% as cost_usd / monthly_budget_usd.
+    monthly_budget_usd = Column(Float, nullable=False, default=500.0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 class SecurityNodeTag(Base):
     __tablename__ = "security_node_tags"
     
