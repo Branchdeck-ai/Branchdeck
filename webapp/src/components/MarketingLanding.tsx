@@ -771,6 +771,7 @@ export default function MarketingLanding({
 }: MarketingLandingProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const onOpenWaitlist = () => setIsModalOpen(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeFeature, setActiveFeature] = useState(0);
@@ -851,13 +852,13 @@ export default function MarketingLanding({
               <span className="hidden sm:inline">Contact Us</span>
               <span className="inline sm:hidden">Contact</span>
             </button>
-            <a
-              href="/dashboard"
+            <button
+              onClick={onOpenWaitlist}
               className={`text-xs sm:text-[13px] font-semibold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full transition-all shadow-sm flex items-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'}`}
             >
               <BarChart3 className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-              <span>View Demo</span>
-            </a>
+              <span>Get Started</span>
+            </button>
           </div>
 
           {/* Theme Toggle Switch */}
@@ -1155,11 +1156,11 @@ export default function MarketingLanding({
           </div>
           <div className="mt-12 text-center">
             <MagneticBtn
-              onClick={() => { window.location.href = '/dashboard'; }}
+              onClick={onOpenWaitlist}
               className={`text-[14px] font-semibold px-8 py-3.5 rounded-full transition-all shadow-lg ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'}`}
             >
               <BarChart3 className="w-4 h-4 text-blue-400 inline-block mr-2" />
-              Open Client Demo Dashboard
+              Request Demo
             </MagneticBtn>
           </div>
         </div>
@@ -1281,13 +1282,13 @@ export default function MarketingLanding({
               </p>
               <div className="flex items-center gap-3 mt-6 flex-wrap">
                 <button
-                  onClick={() => { window.location.href = '/dashboard'; }}
+                  onClick={onOpenWaitlist}
                   className={`text-[12px] font-bold px-5 py-2.5 rounded-full flex items-center gap-2 transition-all shadow-md cursor-pointer ${
                     isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20' : 'bg-slate-950 hover:bg-slate-850 text-white shadow-slate-950/15'
                   }`}
                 >
                   <BarChart3 className="w-3.5 h-3.5" />
-                  <span>Launch Demo Dashboard</span>
+                  <span>Request Access</span>
                   <ArrowRight className="w-3.5 h-3.5 opacity-70" />
                 </button>
               </div>
@@ -1574,9 +1575,9 @@ export default function MarketingLanding({
             <motion.button
               whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(0,0,0,0.1)' }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => { window.location.href = '/dashboard'; }}
+              onClick={onOpenWaitlist}
               className={`btn-shimmer text-[13px] font-semibold px-7 py-3.5 rounded-full transition-all shadow-sm ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'}`}>
-              Explore Live Retainer Dashboard
+              Request Beta Access
             </motion.button>
           </div>
         </FadeIn>
@@ -1686,9 +1687,9 @@ export default function MarketingLanding({
           </p>
         </FadeIn>
         <FadeIn delay={0.25} className="flex items-center justify-center gap-4 flex-wrap">
-          <MagneticBtn onClick={() => { window.location.href = '/dashboard'; }}
+          <MagneticBtn onClick={onOpenWaitlist}
             className={`btn-shimmer text-[15px] font-semibold px-10 py-4 rounded-full flex items-center gap-2 transition-all shadow-xl group ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-900/20' : 'bg-slate-950 hover:bg-slate-850 text-white shadow-slate-950/20'}`}>
-            Launch Client Retainer Demo Dashboard
+            Get Free Architecture Review
             <motion.div animate={{ x: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
               <ArrowRight className="w-4 h-4" />
             </motion.div>
@@ -1727,11 +1728,11 @@ export default function MarketingLanding({
         </div>
         {[
           { heading: 'Product', links: [
-            { label: 'Client Retainer Portal', href: '/dashboard' },
+            { label: 'AST Code Parser', href: '#how-it-works' },
             { label: 'How It Works', href: '#how-it-works' },
             { label: 'What We Build', href: '#what-we-build' },
             { label: 'Pricing', href: '#pricing' },
-            { label: 'Spend Governance', href: '/dashboard' }
+            { label: 'Security Analysis', href: '#faq' }
           ]},
           { heading: 'Company', links: [
             { label: 'About', href: '#how-it-works' },
@@ -2056,8 +2057,8 @@ export default function MarketingLanding({
                   <td className="p-4 text-xs">One integration, built end-to-end on your repo</td>
                   <td className="p-4 text-xs text-slate-400">Teams evaluating fit</td>
                   <td className="p-4 text-right">
-                    <button onClick={() => { window.location.href = '/dashboard'; }} className="px-4 py-1.5 rounded-full text-xs font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors cursor-pointer flex items-center gap-1.5 ml-auto">
-                      <span>Try Demo Dashboard</span>
+                    <button onClick={onOpenWaitlist} className="px-4 py-1.5 rounded-full text-xs font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors cursor-pointer flex items-center gap-1.5 ml-auto">
+                      <span>Request Free Demo</span>
                       <ArrowRight className="w-3 h-3 opacity-70" />
                     </button>
                   </td>
@@ -2067,8 +2068,8 @@ export default function MarketingLanding({
                   <td className="p-4 text-xs">Single feature integration, fixed scope</td>
                   <td className="p-4 text-xs text-slate-400">One-off AI feature need</td>
                   <td className="p-4 text-right">
-                    <button onClick={() => { window.location.href = '/dashboard'; }} className="px-4 py-1.5 rounded-full text-xs font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors cursor-pointer flex items-center gap-1.5 ml-auto">
-                      <span>View Retainer Portal</span>
+                    <button onClick={onOpenWaitlist} className="px-4 py-1.5 rounded-full text-xs font-bold border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-850 transition-colors cursor-pointer flex items-center gap-1.5 ml-auto">
+                      <span>Get Started</span>
                       <ArrowRight className="w-3 h-3 opacity-70" />
                     </button>
                   </td>
@@ -2078,8 +2079,8 @@ export default function MarketingLanding({
                   <td className="p-4 text-xs font-medium">Ongoing integrations, maintenance, spend governance dashboard</td>
                   <td className="p-4 text-xs font-medium">Teams shipping AI features continuously</td>
                   <td className="p-4 text-right">
-                    <button onClick={() => { window.location.href = '/dashboard'; }} className="px-4 py-1.5 rounded-full text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 ml-auto">
-                      <span>Enter Retainer Portal</span>
+                    <button onClick={onOpenWaitlist} className="px-4 py-1.5 rounded-full text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 ml-auto">
+                      <span>Contact Sales</span>
                       <ArrowRight className="w-3 h-3 opacity-70" />
                     </button>
                   </td>
