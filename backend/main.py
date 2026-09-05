@@ -1197,6 +1197,9 @@ async def list_cost_logs(
         if integration_id not in allowed_ids:
             raise HTTPException(status_code=403, detail="Access denied: integration not found or not owned")
         query_ids = [integration_id]
+    else:
+        query_ids = list(allowed_ids)
+
     if not query_ids:
         return {"success": True, "cost_logs": []}
 
