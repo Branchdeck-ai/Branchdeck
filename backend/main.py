@@ -1136,14 +1136,15 @@ async def list_integrations(
             raise HTTPException(status_code=403, detail="Access denied: not a member of the requested organization")
 
     integrations = (
-        db.query(Integration)
-        .filter_by(organization_id=org_id)
+        db.query(Integration, Repository.name.label("repo_name"))
+        .outerjoin(Repository, Integration.repo_id == Repository.id)
+        .filter(Integration.organization_id == org_id)
         .order_by(Integration.created_at.desc())
         .all()
     )
 
     # Build a request-count map from CostLog in a single aggregate query
-    integration_ids = [i.id for i in integrations]
+    integration_ids = [i.id for i, _ in integrations]
     request_counts = {}
     if integration_ids:
         rows = db.query(
@@ -1160,6 +1161,7 @@ async def list_integrations(
             {
                 "id": i.id,
                 "repo_id": i.repo_id,
+                "repo_name": repo_name or "Unknown Repo",
                 "name": i.name,
                 "type": i.type,
                 "status": i.status,
@@ -1169,7 +1171,7 @@ async def list_integrations(
                 "created_at": i.created_at.isoformat() if i.created_at else None,
                 "updated_at": i.updated_at.isoformat() if i.updated_at else None,
             }
-            for i in integrations
+            for i, repo_name in integrations
         ]
     }
 
@@ -1352,6 +1354,29 @@ async def get_dashboard_summary(
         "per_integration": per_integration_list,
         "daily": daily_list
     }
+
+
+@app.get("/api/dashboard/usage")
+async def get_dashboard_usage(
+    range: str = "30d",
+    days: Optional[int] = None,
+    organization_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
+    """Aggregated usage and cost time series for date range, per-type breakdown totals, and overall KPI totals."""
+    if days is not None:
+        window_days = days
+    elif range == "7d":
+        window_days = 7
+    elif range == "mtd":
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        window_days = max(1, now.day)
+    else:
+        window_days = 30
+
+    return await get_dashboard_summary(days=window_days, organization_id=organization_id, db=db, current_user=current_user)
 
 
 @app.get("/api/dashboard/repos")
