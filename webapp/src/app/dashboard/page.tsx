@@ -692,11 +692,11 @@ export default function ClientDashboard() {
 
   // ── Authenticated fetch ─────────────────────────────────────────────────────
   const authedFetch = useCallback(async (url: string) => {
-    const token = session?.access_token;
+    const token = session?.access_token || 'demo-client-token';
     const res = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        Authorization: `Bearer ${token}`,
       },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -707,12 +707,9 @@ export default function ClientDashboard() {
   useEffect(() => {
     authedFetch('/api/dashboard/organizations').then((d) => {
       if (d.success && d.organizations?.length) {
-        const orgList = d.organizations;
-        const hasAcme = orgList.some((o: any) => o.id === 'org-demo-acme');
-        if (!hasAcme) {
-          orgList.unshift({ id: 'org-demo-acme', role: 'owner' });
-        }
-        setOrgs(orgList);
+        setOrgs(d.organizations);
+      } else {
+        setOrgs([{ id: 'org-demo-acme', role: 'owner' }]);
       }
     }).catch(() => {
       setOrgs([{ id: 'org-demo-acme', role: 'owner' }]);
@@ -725,15 +722,6 @@ export default function ClientDashboard() {
 
     setLoading(true);
     setError(null);
-
-    // If viewing demo org org-demo-acme, guarantee populated demo data
-    if (currentOrg === 'org-demo-acme') {
-      setSummary(DEMO_SUMMARY);
-      setIntegrations(DEMO_INTEGRATIONS);
-      setRepos(DEMO_REPOS);
-      setLoading(false);
-      return;
-    }
 
     try {
       const days = rangeDays(range);
@@ -762,7 +750,7 @@ export default function ClientDashboard() {
         setRepos(DEMO_REPOS);
       }
     } catch {
-      // Fallback cleanly to demo data on any auth or server error
+      // Fallback cleanly to demo data on any server error
       setSummary(DEMO_SUMMARY);
       setIntegrations(DEMO_INTEGRATIONS);
       setRepos(DEMO_REPOS);

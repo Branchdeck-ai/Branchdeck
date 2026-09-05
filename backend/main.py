@@ -112,7 +112,7 @@ def verify_jwt_hs256(token: str, secret: str) -> dict:
     except (jwt.InvalidTokenError, Exception) as e:
         if not _is_production:
             return {
-                "sub": "seed-user-123",
+                "sub": "user-demo-001",
                 "email": "demo.client@branchdeck.com",
                 "role": "authenticated",
                 "user_metadata": {}

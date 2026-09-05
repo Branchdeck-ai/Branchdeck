@@ -9,7 +9,7 @@ import {
   useMotionValue,
   useVelocity,
   useAnimationFrame
-} from 'motion/react';
+} from 'framer-motion';
 import './ScrollVelocity.css';
 
 function useElementWidth(ref: React.RefObject<HTMLSpanElement | null>) {
