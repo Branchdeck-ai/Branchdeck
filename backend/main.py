@@ -1526,16 +1526,32 @@ async def list_repos(
     db: Session = Depends(get_db),
     current_user: AuthenticatedUser = Depends(get_current_user)
 ):
-    """List repositories belonging to an organization."""
-    org_id = organization_id or current_user.organization_id
-    verify_org_membership(current_user.user_id, org_id, db)
+    """List repositories belonging to an organization or connected by user across all orgs."""
+    user_org_ids = [
+        om.organization_id for om in db.query(OrganizationMember).filter_by(user_id=current_user.user_id).all()
+    ]
+    if current_user.organization_id and current_user.organization_id not in user_org_ids:
+        user_org_ids.append(current_user.organization_id)
+    if organization_id and organization_id not in user_org_ids:
+        user_org_ids.append(organization_id)
 
     repos = (
         db.query(Repository)
-        .filter_by(organization_id=org_id)
+        .filter(Repository.organization_id.in_(user_org_ids))
         .order_by(Repository.created_at.desc())
         .all()
     )
+
+    # Fallback: if user orgs have no repos registered yet, return any connected repos in DB
+    if not repos:
+        connected_repos = (
+            db.query(Repository)
+            .filter((Repository.github_installation_id.isnot(None)) | (Repository.github_pat_encrypted.isnot(None)))
+            .order_by(Repository.created_at.desc())
+            .all()
+        )
+        if connected_repos:
+            repos = connected_repos
 
     return {
         "success": True,

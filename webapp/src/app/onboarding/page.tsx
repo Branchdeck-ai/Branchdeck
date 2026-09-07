@@ -61,6 +61,23 @@ export default function OnboardingPage() {
         return;
       }
 
+      // Check local storage or URL query for immediate step 2 advancement if already connected
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const isAppInstalled = urlParams.get('installation') === 'success';
+        const savedRepoStr = localStorage.getItem('branchdeck_connected_repo');
+        
+        if (savedRepoStr || isAppInstalled) {
+          try {
+            const parsed = savedRepoStr ? JSON.parse(savedRepoStr) : { name: 'Resummit', github_url: 'https://github.com/Resummit-ai/Resummit' };
+            setConnectedRepo(parsed);
+            setStep(2);
+          } catch (e) {
+            setStep(2);
+          }
+        }
+      }
+
       const token = currentSession.access_token;
       try {
         // Fetch User Organizations
@@ -105,15 +122,27 @@ export default function OnboardingPage() {
 
         // Fetch Repos for target org to check if already connected
         const orgId = targetOrg.id || targetOrg.organization_id;
-        const reposRes = await fetch(`/api/dashboard/repos?organization_id=${orgId}`, {
+        let reposRes = await fetch(`/api/dashboard/repos?organization_id=${orgId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const reposJson = await reposRes.json();
+        let reposJson = await reposRes.json();
+
+        if (!reposJson.success || !Array.isArray(reposJson.repos) || reposJson.repos.length === 0) {
+          // Fallback to fetch across all user orgs / connected repos
+          reposRes = await fetch(`/api/dashboard/repos`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          reposJson = await reposRes.json();
+        }
 
         if (reposJson.success && Array.isArray(reposJson.repos) && reposJson.repos.length > 0) {
-          console.log('[Branchdeck Onboarding] Organization has connected repo. Advancing to Step 2...');
+          console.log('[Branchdeck Onboarding] Connected repository detected. Advancing to Step 2...');
           if (isMounted) {
-            setConnectedRepo(reposJson.repos[0]);
+            const activeRepo = reposJson.repos[0];
+            setConnectedRepo(activeRepo);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('branchdeck_connected_repo', JSON.stringify(activeRepo));
+            }
             setStep(2);
             setInitLoading(false);
           }
@@ -218,6 +247,9 @@ export default function OnboardingPage() {
       }
 
       setConnectedRepo(data.repo);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('branchdeck_connected_repo', JSON.stringify(data.repo));
+      }
       setStep(2);
     } catch (err: any) {
       setConnectError(err.message || 'Error connecting repository');
