@@ -64,8 +64,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
 
     try {
       if (mode === 'signin') {
+        console.log('[Branchdeck Auth Modal] Form submitted for mode: signin, Email:', cleanEmail);
         const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
         if (error) {
+          console.error('[Branchdeck Auth Modal] Sign in error:', error.message);
           if (error.message.toLowerCase().includes('email not confirmed')) {
             setError('Email is not confirmed yet. Please check your inbox for the verification email.');
           } else if (error.message.toLowerCase().includes('invalid login credentials')) {
@@ -74,18 +76,70 @@ export default function AuthModal({ isOpen, onClose, onSuccess, initialMode = 's
             setError(error.message);
           }
         } else if (data?.session) {
+          console.log('[Branchdeck Auth Modal] Sign in succeeded. User ID:', data.user?.id);
+          console.log('[Branchdeck Auth Modal] Provisioning/checking organization...');
+          try {
+            const headers: Record<string, string> = {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${data.session.access_token}`,
+            };
+            await fetch('/api/dashboard/organizations/provision', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                user_id: data.user?.id,
+                email: cleanEmail,
+              }),
+            });
+            console.log('[Branchdeck Auth Modal] Organization provisioned/verified.');
+          } catch (provErr) {
+            console.error('[Branchdeck Auth Modal] Org provisioning check on sign-in error:', provErr);
+          }
+
           onSuccess(data.session);
           onClose();
+          console.log('[Branchdeck Auth Modal] Redirecting to /onboarding...');
+          window.location.href = '/onboarding';
         } else {
           setError('Authentication failed to issue a session. Please try again.');
         }
       } else {
+        console.log('[Branchdeck Auth Modal] Form submitted for mode: signup, Email:', cleanEmail);
         const { data, error } = await supabase.auth.signUp({ email: cleanEmail, password });
         if (error) {
+          console.error('[Branchdeck Auth Modal] Sign up error:', error.message);
           setError(error.message);
-        } else if (data?.session) {
-          onSuccess(data.session);
-          onClose();
+        } else if (data?.session || data?.user) {
+          console.log('[Branchdeck Auth Modal] Sign up succeeded. User ID:', data.user?.id);
+          console.log('[Branchdeck Auth Modal] Provisioning real organization for self-serve signup...');
+          try {
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (data?.session?.access_token) {
+              headers['Authorization'] = `Bearer ${data.session.access_token}`;
+            }
+            await fetch('/api/dashboard/organizations/provision', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                user_id: data.user?.id,
+                email: cleanEmail,
+              }),
+            });
+            console.log('[Branchdeck Auth Modal] Organization provisioned successfully.');
+          } catch (provErr) {
+            console.error('[Branchdeck Auth Modal] Provisioning error on sign-up:', provErr);
+          }
+
+          if (data?.session) {
+            onSuccess(data.session);
+            onClose();
+            console.log('[Branchdeck Auth Modal] Redirecting to /onboarding...');
+            window.location.href = '/onboarding';
+          } else {
+            console.log('[Branchdeck Auth Modal] Email confirmation required. Switched mode to signin.');
+            setSuccessMsg('Account created & organization provisioned! Please check your email for confirmation, then click Sign In.');
+            setMode('signin');
+          }
         } else {
           setSuccessMsg('Account created successfully! If you did not receive a verification email, please check your spam folder or disable email verification in your Supabase Auth settings. Once verified, click Sign In to log in.');
           setMode('signin');

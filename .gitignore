@@ -21,6 +21,14 @@ __pycache__/
 .env*
 **/.env*
 
+# Secrets and keys
+secrets/
+**/secrets/
+*.pem
+**/*.pem
+*.key
+**/*.key
+
 # Vercel
 .vercel/
 **/.vercel/

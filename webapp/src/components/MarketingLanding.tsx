@@ -34,6 +34,7 @@ interface MarketingLandingProps {
   onAnalyze: (customRepo?: string) => void;
   onLoadDemo: () => void;
   onSignIn?: () => void;
+  onSignUp?: () => void;
   onSignOut?: () => void;
   onOpenRepoPicker?: () => void;
 }
@@ -430,12 +431,16 @@ const LOGO_SVG = (
  ═══════════════════════════════════════════════════ */
 interface HeroProps {
   onLoadDemo: () => void;
+  onSignUp?: () => void;
+  onSignIn?: () => void;
   setIsModalOpen: (open: boolean) => void;
+  setIsContactModalOpen: (open: boolean) => void;
   typedWord: string;
   isDarkMode?: boolean;
+  session?: any;
 }
 
-function Hero({ onLoadDemo, setIsModalOpen, typedWord, isDarkMode }: HeroProps) {
+function Hero({ onLoadDemo, onSignUp, onSignIn, setIsModalOpen, setIsContactModalOpen, typedWord, isDarkMode, session }: HeroProps) {
   const heroRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -517,9 +522,61 @@ function Hero({ onLoadDemo, setIsModalOpen, typedWord, isDarkMode }: HeroProps) 
         </motion.div>
 
         <motion.h2 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.85, delay: 0.38, ease: EASE_OUT_EXPO }}
-          className={`text-[clamp(1rem,1.8vw,1.18rem)] font-normal leading-relaxed max-w-3xl mx-auto mb-10 transition-colors duration-300 ${isDarkMode ? 'text-slate-300' : 'text-neutral-600'}`}>
+          className={`text-[clamp(1rem,1.8vw,1.18rem)] font-normal leading-relaxed max-w-3xl mx-auto mb-8 transition-colors duration-300 ${isDarkMode ? 'text-slate-300' : 'text-neutral-600'}`}>
           Branchdeck analyzes your actual repo rather than a sandbox and ships AI search, support agents, and document processing that match your existing code patterns. Your developers review and merge every change.
         </motion.h2>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.85, delay: 0.5, ease: EASE_OUT_EXPO }}
+          className="flex items-center justify-center gap-3.5 flex-wrap mb-12"
+        >
+          {/* Primary CTA */}
+          {session?.user ? (
+            <a
+              href="/dashboard"
+              className="text-[14px] sm:text-[15px] font-extrabold px-8 py-3.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-lg shadow-blue-500/25 flex items-center gap-2 cursor-pointer group hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <span>Go to Dashboard</span>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </a>
+          ) : (
+            <button
+              onClick={onSignUp}
+              className="text-[14px] sm:text-[15px] font-extrabold px-8 py-3.5 rounded-full bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-lg shadow-blue-500/25 flex items-center gap-2 cursor-pointer group hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <span>Get Started</span>
+              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            </button>
+          )}
+
+          {/* Secondary CTA: View Demo (points to sandbox interactive demo) */}
+          <button
+            onClick={onLoadDemo}
+            className={`text-[14px] sm:text-[15px] font-bold px-7 py-3.5 rounded-full border transition-all flex items-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
+              isDarkMode
+                ? 'border-slate-700 bg-slate-900/90 text-slate-200 hover:bg-slate-800 hover:text-white'
+                : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50 shadow-sm'
+            }`}
+          >
+            <Play className="w-4 h-4 text-blue-500 fill-blue-500" />
+            <span>View Demo</span>
+          </button>
+
+          {/* Alternate CTA: Contact Us (opens contact modal) */}
+          <button
+            onClick={() => setIsContactModalOpen(true)}
+            className={`text-[14px] sm:text-[15px] font-bold px-6 py-3.5 rounded-full border transition-all flex items-center gap-2 cursor-pointer ${
+              isDarkMode
+                ? 'border-slate-800/80 bg-slate-900/40 text-slate-300 hover:text-white hover:bg-slate-800'
+                : 'border-slate-200 bg-slate-100/70 text-slate-700 hover:bg-slate-200 hover:text-slate-900'
+            }`}
+          >
+            <Mail className="w-4 h-4 text-blue-500" />
+            <span>Contact Us</span>
+          </button>
+        </motion.div>
 
       </motion.div>
 
@@ -767,7 +824,7 @@ function RealDashboardPreview({ onLoadDemo }: { onLoadDemo: () => void }) {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════ */
 export default function MarketingLanding({
-  session, repoUrl, setRepoUrl, analyzing, onAnalyze, onLoadDemo, onSignIn, onSignOut, onOpenRepoPicker,
+  session, repoUrl, setRepoUrl, analyzing, onAnalyze, onLoadDemo, onSignIn, onSignUp, onSignOut, onOpenRepoPicker,
 }: MarketingLandingProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
@@ -852,13 +909,48 @@ export default function MarketingLanding({
               <span className="hidden sm:inline">Contact Us</span>
               <span className="inline sm:hidden">Contact</span>
             </button>
-            <button
-              onClick={onOpenWaitlist}
-              className={`text-xs sm:text-[13px] font-semibold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full transition-all shadow-sm flex items-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap ${isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'}`}
-            >
-              <BarChart3 className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-              <span>Get Started</span>
-            </button>
+            {session?.user ? (
+              <>
+                <a
+                  href="/dashboard"
+                  className={`text-xs sm:text-[13px] font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full transition-all shadow-sm flex items-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap ${
+                    isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-900 hover:bg-slate-800 text-white'
+                  }`}
+                >
+                  <BarChart3 className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                  <span>Dashboard</span>
+                </a>
+                <button
+                  onClick={onSignOut}
+                  className={`text-xs sm:text-[13px] font-bold px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-full border transition-all flex items-center gap-1 cursor-pointer ${
+                    isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-300 hover:text-white hover:border-slate-600' : 'border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                  title="Sign Out"
+                >
+                  <span>Sign Out</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={onSignIn}
+                  className={`text-xs sm:text-[13px] font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border transition-all flex items-center gap-1 cursor-pointer ${
+                    isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200 hover:text-white' : 'border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <span>Sign In</span>
+                </button>
+                <button
+                  onClick={onSignUp}
+                  className={`text-xs sm:text-[13px] font-semibold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full transition-all shadow-sm flex items-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap ${
+                    isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'
+                  }`}
+                >
+                  <BarChart3 className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                  <span>Get Started</span>
+                </button>
+              </>
+            )}
           </div>
 
           {/* Theme Toggle Switch */}
@@ -2159,7 +2251,11 @@ export default function MarketingLanding({
       <main>
         <Hero 
           onLoadDemo={onLoadDemo} 
+          onSignUp={onSignUp}
+          onSignIn={onSignIn}
+          session={session}
           setIsModalOpen={setIsModalOpen} 
+          setIsContactModalOpen={setIsContactModalOpen}
           typedWord={typedWord} 
           isDarkMode={isDarkMode}
         />

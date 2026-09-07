@@ -1,0 +1,33 @@
+import { NextResponse } from 'next/server';
+
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+
+export async function POST(request: Request) {
+  try {
+    const rawBody = await request.arrayBuffer();
+    const signature = request.headers.get('x-hub-signature-256') || '';
+    const event = request.headers.get('x-github-event') || '';
+    const delivery = request.headers.get('x-github-delivery') || '';
+
+    const headers: Record<string, string> = {
+      'Content-Type': request.headers.get('content-type') || 'application/json',
+      'X-Hub-Signature-256': signature,
+      'X-GitHub-Event': event,
+      'X-GitHub-Delivery': delivery,
+    };
+
+    const res = await fetch(`${BACKEND_URL}/api/github/webhook`, {
+      method: 'POST',
+      headers,
+      body: rawBody,
+    });
+
+    const data = await res.json().catch(() => ({}));
+    return NextResponse.json(data, { status: res.status });
+  } catch (err: any) {
+    return NextResponse.json(
+      { success: false, error: err?.message || 'Webhook proxy error' },
+      { status: 500 }
+    );
+  }
+}

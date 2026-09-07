@@ -64,10 +64,14 @@ class Repository(Base):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     organization_id = Column(String(100), nullable=False)
     name = Column(String(100), nullable=False)
+    github_url = Column(String(255), nullable=True)
+    github_pat_encrypted = Column(Text, nullable=True)
+    github_installation_id = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     __table_args__ = (
         Index("idx_repos_org", "organization_id"),
+        Index("idx_repos_installation", "github_installation_id"),
     )
 
 class Commit(Base):
@@ -328,6 +332,24 @@ def init_db():
                 conn.execute(text("SELECT 1"))
             Base.metadata.create_all(bind=engine)
             logger.info("Database initialized successfully.")
+
+            # Ensure repos table has github_pat_encrypted and github_url columns
+            try:
+                with engine.begin() as conn:
+                    if engine.dialect.name == "sqlite":
+                        cols = [r[1] for r in conn.execute(text("PRAGMA table_info(repos)")).fetchall()]
+                        if "github_pat_encrypted" not in cols:
+                            conn.execute(text("ALTER TABLE repos ADD COLUMN github_pat_encrypted TEXT"))
+                        if "github_url" not in cols:
+                            conn.execute(text("ALTER TABLE repos ADD COLUMN github_url VARCHAR(255)"))
+                        if "github_installation_id" not in cols:
+                            conn.execute(text("ALTER TABLE repos ADD COLUMN github_installation_id VARCHAR(100)"))
+                    else:
+                        conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_pat_encrypted TEXT"))
+                        conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_url VARCHAR(255)"))
+                        conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_installation_id VARCHAR(100)"))
+            except Exception as col_err:
+                logger.warning(f"Could not ensure repos columns: {col_err}")
             # Create pgvector IVFFlat index on code_chunks.embedding for fast ANN search
             # Runs as IF NOT EXISTS so it is safe to call on every startup
             if "postgresql" in DATABASE_URL:

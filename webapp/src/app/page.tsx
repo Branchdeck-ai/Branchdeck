@@ -63,26 +63,106 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
+      console.log('[Branchdeck Auth] Supabase not configured.');
       setSession(null);
       setAuthLoading(false);
       return;
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    const handleSignedInSession = async (sess: any, source: string) => {
+      console.log(`[Branchdeck Auth] Session detected via ${source}. User ID:`, sess?.user?.id, 'Email:', sess?.user?.email);
+      setSession(sess);
       setAuthLoading(false);
+
+      if (sess) {
+        const onboarded = typeof window !== 'undefined' && localStorage.getItem('branchdeck_onboarded') === 'true';
+        const skipRedirect = typeof window !== 'undefined' && window.location.search.includes('skip_redirect');
+
+        if (!onboarded && !skipRedirect) {
+          console.log(`[Branchdeck Auth] User has not onboarded yet. Provisioning org & redirecting to /onboarding...`);
+          try {
+            await fetch('/api/dashboard/organizations/provision', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sess.access_token}`,
+              },
+              body: JSON.stringify({
+                user_id: sess.user?.id,
+                email: sess.user?.email,
+              }),
+            });
+            console.log('[Branchdeck Auth] Provisioning call completed.');
+          } catch (e) {
+            console.error('[Branchdeck Auth] Auto-provisioning error:', e);
+          }
+          console.log('[Branchdeck Auth] Redirecting to /onboarding...');
+          window.location.href = '/onboarding';
+        } else {
+          console.log('[Branchdeck Auth] User already onboarded or skip_redirect present. Staying on page.');
+        }
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[Branchdeck Auth] getSession on mount result:', session ? `User ${session.user?.id}` : 'No session');
+      if (session) {
+        handleSignedInSession(session, 'getSession() on mount');
+      } else {
+        setAuthLoading(false);
+      }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setAuthLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('[Branchdeck Auth] onAuthStateChange event:', event, 'session:', session ? `User ${session.user?.id}` : 'None');
+      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
+        handleSignedInSession(session, `onAuthStateChange(${event})`);
+      } else {
+        setSession(session);
+        setAuthLoading(false);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Helper: open auth modal
-  const openAuth = (mode: 'signin' | 'signup' = 'signin') => {
+  // Helper: open auth modal or redirect logged-in user directly
+  const openAuth = async (mode: 'signin' | 'signup' = 'signin') => {
+    console.log('[Branchdeck Auth] "Get Started" / "Sign In" clicked. Requested mode:', mode);
+    let activeSession = session;
+    if (!activeSession && isSupabaseConfigured) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        activeSession = data.session;
+      } catch (err) {
+        console.error('[Branchdeck Auth] Error checking session on openAuth:', err);
+      }
+    }
+
+    if (activeSession) {
+      const onboarded = typeof window !== 'undefined' && localStorage.getItem('branchdeck_onboarded') === 'true';
+      const targetUrl = onboarded ? '/dashboard' : '/onboarding';
+      console.log('[Branchdeck Auth] Active session found for user:', activeSession.user?.id, `. Redirecting to ${targetUrl}...`);
+      try {
+        await fetch('/api/dashboard/organizations/provision', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${activeSession.access_token}`,
+          },
+          body: JSON.stringify({
+            user_id: activeSession.user?.id,
+            email: activeSession.user?.email,
+          }),
+        });
+      } catch (e) {
+        console.error('[Branchdeck Auth] Org provision error during openAuth redirect:', e);
+      }
+      window.location.href = targetUrl;
+      return;
+    }
+
+    console.log('[Branchdeck Auth] No active session. Opening AuthModal mode:', mode);
     setAuthInitialMode(mode);
     setIsAuthOpen(true);
   };
@@ -337,6 +417,9 @@ export default function Dashboard() {
 
   // Dedicated clean Log Out handler
   const handleLogOut = async () => {
+    if (isSupabaseConfigured) {
+      await supabase.auth.signOut();
+    }
     setSession(null);
     setHasData(false);
     setFeatures([]);
@@ -1049,6 +1132,7 @@ export default function Dashboard() {
           analyzing={analyzing}
           onAnalyze={handleAnalyze}
           onSignIn={() => openAuth('signin')}
+          onSignUp={() => openAuth('signup')}
           onSignOut={handleLogOut}
           onOpenRepoPicker={() => setIsRepoModalOpen(true)}
           onLoadDemo={() => setIsRepoModalOpen(true)}

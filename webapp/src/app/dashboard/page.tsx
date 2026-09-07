@@ -31,6 +31,7 @@ import {
   Mail,
   Menu,
   X,
+  Plus,
 } from 'lucide-react';
 import ContactModal from '@/components/ContactModal';
 
@@ -649,34 +650,133 @@ const DEMO_REPOS = [
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function ClientDashboard() {
-  const [session, setSession] = useState<any>({
-    user: { email: 'adelmuhammed786@gmail.com', id: 'demo-client-id' },
-    access_token: 'demo-token',
-  });
-  const [authLoading, setAuthLoading] = useState(false);
+  const [session, setSession] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [activeNav, setActiveNav] = useState('dashboard');
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  // Org switcher - default to org-demo-acme so data populates immediately for any user
-  const [orgs, setOrgs] = useState<OrgOption[]>([{ id: 'org-demo-acme', role: 'owner' }]);
-  const [activeOrg, setActiveOrg] = useState<string>('org-demo-acme');
+  // Org switcher - initialized empty, populated from backend for real session
+  const [orgs, setOrgs] = useState<OrgOption[]>([]);
+  const [activeOrg, setActiveOrg] = useState<string>('');
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
 
   // Date range
   const [range, setRange] = useState<DateRange>('30d');
 
   // Dashboard Data
-  const [summary, setSummary] = useState<Summary | null>(DEMO_SUMMARY);
-  const [integrations, setIntegrations] = useState<Integration[]>(DEMO_INTEGRATIONS);
-  const [repos, setRepos] = useState<any[]>(DEMO_REPOS);
-  const [loading, setLoading] = useState(false);
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [integrations, setIntegrations] = useState<Integration[]>([]);
+  const [repos, setRepos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Settings State
-  const [budgetCap, setBudgetCap] = useState<number>(500);
+  const [budgetCap, setBudgetCap] = useState<number>(10);
   const [budgetSaved, setBudgetSaved] = useState(false);
   const [integFilter, setIntegFilter] = useState<string>('all');
+
+  // Repo Connect Form State
+  const [connectUrl, setConnectUrl] = useState('');
+  const [connectPat, setConnectPat] = useState('');
+  const [connectLoading, setConnectLoading] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
+  const [connectSuccess, setConnectSuccess] = useState<string | null>(null);
+
+  // Feature Request Form State
+  const [genRepoId, setGenRepoId] = useState('');
+  const [genDescription, setGenDescription] = useState('');
+  const [genLoading, setGenLoading] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [genSuccess, setGenSuccess] = useState<string | null>(null);
+  const [genPrUrl, setGenPrUrl] = useState<string | null>(null);
+
+  const handleGenerateFeature = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!genDescription.trim()) {
+      setGenError('Please enter a description for the requested AI feature.');
+      return;
+    }
+
+    setGenLoading(true);
+    setGenError(null);
+    setGenSuccess(null);
+    setGenPrUrl(null);
+
+    try {
+      const token = session?.access_token || '';
+      const targetRepoId = genRepoId || (repos.length > 0 ? repos[0].id : '');
+
+      const res = await fetch('/api/dashboard/integrations/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          organization_id: activeOrg,
+          repo_id: targetRepoId,
+          feature_description: genDescription.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.detail || data.error || 'Failed to generate feature PR.');
+      }
+
+      setGenSuccess(data.message || 'Successfully generated AI feature code and opened GitHub Pull Request!');
+      setGenPrUrl(data.integration?.pr_url || null);
+      setGenDescription('');
+      fetchDashboard();
+    } catch (err: any) {
+      setGenError(err.message || 'Error generating feature PR');
+    } finally {
+      setGenLoading(false);
+    }
+  };
+
+  const handleConnectRepo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!connectUrl.trim() || !connectPat.trim()) {
+      setConnectError('Please enter both repository URL and Personal Access Token (PAT).');
+      return;
+    }
+
+    setConnectLoading(true);
+    setConnectError(null);
+    setConnectSuccess(null);
+
+    try {
+      const token = session?.access_token || '';
+      const res = await fetch('/api/dashboard/repos/connect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          organization_id: activeOrg,
+          repo_url: connectUrl.trim(),
+          github_pat: connectPat.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.detail || data.error || 'Failed to connect repository.');
+      }
+
+      setConnectSuccess(data.message || `Successfully connected repository '${data.repo?.name}'! PAT verified and stored encrypted.`);
+      setConnectUrl('');
+      setConnectPat('');
+      fetchDashboard();
+    } catch (err: any) {
+      setConnectError(err.message || 'Error connecting repository');
+    } finally {
+      setConnectLoading(false);
+    }
+  };
 
   // ── Auth bootstrap ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -685,14 +785,19 @@ export default function ClientDashboard() {
       return;
     }
     supabase.auth.getSession().then(({ data: { session: s } }) => {
-      if (s) setSession(s);
+      setSession(s);
       setAuthLoading(false);
     });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      setSession(s);
+      setAuthLoading(false);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // ── Authenticated fetch ─────────────────────────────────────────────────────
   const authedFetch = useCallback(async (url: string) => {
-    const token = session?.access_token || 'demo-client-token';
+    const token = session?.access_token || '';
     const res = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
@@ -705,20 +810,35 @@ export default function ClientDashboard() {
 
   // ── Load orgs ───────────────────────────────────────────────────────────────
   useEffect(() => {
+    if (!session?.access_token) return;
+    console.log('[Branchdeck Dashboard] Fetching user organizations from backend...');
     authedFetch('/api/dashboard/organizations').then((d) => {
-      if (d.success && d.organizations?.length) {
+      console.log('[Branchdeck Dashboard] Loaded user organizations from backend:', d.organizations);
+      if (d.success && Array.isArray(d.organizations)) {
         setOrgs(d.organizations);
+        if (d.organizations.length > 0) {
+          setActiveOrg((prev) => {
+            const exists = d.organizations.some((o: any) => o.id === prev || o.organization_id === prev);
+            return exists ? prev : (d.organizations[0].id || d.organizations[0].organization_id);
+          });
+        } else {
+          setActiveOrg('');
+        }
       } else {
-        setOrgs([{ id: 'org-demo-acme', role: 'owner' }]);
+        setOrgs([]);
+        setActiveOrg('');
       }
-    }).catch(() => {
-      setOrgs([{ id: 'org-demo-acme', role: 'owner' }]);
+    }).catch((err) => {
+      console.error('[Branchdeck Dashboard] Error fetching user organizations:', err);
+      setOrgs([]);
+      setActiveOrg('');
     });
-  }, [authedFetch]);
+  }, [authedFetch, session]);
 
   // ── Load dashboard data & repos ─────────────────────────────────────────────
   const fetchDashboard = useCallback(async () => {
-    const currentOrg = activeOrg || 'org-demo-acme';
+    const currentOrg = activeOrg;
+    if (!currentOrg) return;
 
     setLoading(true);
     setError(null);
@@ -731,30 +851,37 @@ export default function ClientDashboard() {
         authedFetch(`/api/dashboard/repos?organization_id=${currentOrg}`).catch(() => ({ success: false, repos: [] })),
       ]);
 
-      if (summaryData.success && summaryData.per_integration?.length) {
+      if (summaryData.success) {
         setSummary(summaryData);
-        if (summaryData.monthly_budget_usd) setBudgetCap(summaryData.monthly_budget_usd);
+        if (typeof summaryData.monthly_budget_usd === 'number') {
+          setBudgetCap(summaryData.monthly_budget_usd);
+        }
       } else {
-        setSummary(DEMO_SUMMARY);
+        setSummary(null);
       }
 
-      if (integrationData.success && integrationData.integrations?.length) {
+      if (integrationData.success && Array.isArray(integrationData.integrations)) {
         setIntegrations(integrationData.integrations);
       } else {
-        setIntegrations(DEMO_INTEGRATIONS);
+        setIntegrations([]);
       }
 
-      if (repoData.success && repoData.repos?.length) {
+      if (repoData.success && Array.isArray(repoData.repos)) {
         setRepos(repoData.repos);
+        if (repoData.repos.length === 0 && typeof window !== 'undefined' && !window.location.search.includes('skip_redirect=true')) {
+          console.log('[Branchdeck Dashboard] Organization has 0 connected repos. Redirecting to /onboarding...');
+          window.location.href = '/onboarding';
+          return;
+        }
       } else {
-        setRepos(DEMO_REPOS);
+        setRepos([]);
       }
-    } catch {
-      // Fallback cleanly to demo data on any server error
-      setSummary(DEMO_SUMMARY);
-      setIntegrations(DEMO_INTEGRATIONS);
-      setRepos(DEMO_REPOS);
-      setError(null);
+    } catch (err: any) {
+      console.error('[Branchdeck Dashboard] Error loading dashboard metrics:', err);
+      setSummary(null);
+      setIntegrations([]);
+      setRepos([]);
+      setError('Failed to load metrics for the selected organization');
     } finally {
       setLoading(false);
     }
@@ -983,6 +1110,27 @@ export default function ClientDashboard() {
               <Mail className="w-3.5 h-3.5" />
               <span>Contact Us</span>
             </button>
+
+            {/* Header User Identity & Sign Out Control */}
+            {session?.user && (
+              <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+                <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs shadow-2xs">
+                  <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                    {(session.user.email?.[0] ?? 'U').toUpperCase()}
+                  </div>
+                  <span className="font-semibold text-slate-700 max-w-[120px] sm:max-w-[180px] truncate text-[11px]">
+                    {session.user.email}
+                  </span>
+                </div>
+                <button
+                  onClick={() => supabase.auth.signOut()}
+                  className="p-1.5 sm:p-2 rounded-xl hover:bg-red-50 hover:text-red-600 text-slate-500 hover:border-red-200 transition-colors border border-slate-200/80 flex items-center justify-center"
+                  title="Sign out"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
@@ -1050,7 +1198,7 @@ export default function ClientDashboard() {
                 />
                 <KpiCard
                   label="Avg Latency"
-                  value={summary?.avg_latency_ms != null ? `${Math.round(summary.avg_latency_ms)}ms` : '342ms'}
+                  value={summary?.avg_latency_ms != null && (summary?.total_calls ?? 0) > 0 ? `${Math.round(summary.avg_latency_ms)}ms` : '0ms'}
                   sub="mean response latency"
                   icon={<Clock className="w-5 h-5" />}
                   accentColor="text-amber-600"
@@ -1071,8 +1219,16 @@ export default function ClientDashboard() {
                   </div>
                   {loading ? (
                     <div className="h-40 animate-pulse bg-slate-100 rounded-xl" />
+                  ) : summary?.daily?.some(d => d.cost_usd > 0) ? (
+                    <CostChart daily={summary.daily} />
                   ) : (
-                    <CostChart daily={summary?.daily ?? []} />
+                    <div className="h-40 flex flex-col items-center justify-center text-center p-6 bg-slate-50/60 border border-dashed border-slate-200 rounded-xl">
+                      <TrendingUp className="w-8 h-8 text-slate-300 mb-2" />
+                      <p className="text-xs font-bold text-slate-700">No Spend Activity Recorded</p>
+                      <p className="text-[11px] text-slate-500 max-w-sm mt-1">
+                        Connect a repository and request your first AI feature to see daily API cost metrics here.
+                      </p>
+                    </div>
                   )}
                 </div>
 
@@ -1155,7 +1311,26 @@ export default function ClientDashboard() {
                       {[1, 2, 3].map(i => <div key={i} className="h-14 animate-pulse bg-slate-100 rounded-xl" />)}
                     </div>
                   ) : integrations.length === 0 ? (
-                    <div className="px-6 py-12 text-center text-xs font-medium text-slate-400">No integrations found</div>
+                    <div className="px-6 py-12 text-center bg-slate-50/40">
+                      <div className="max-w-md mx-auto space-y-3">
+                        <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto border border-blue-100 shadow-2xs">
+                          <GitBranch className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">No AI integrations for this organization yet</p>
+                          <p className="text-xs text-slate-500 mt-1">
+                            Connect a repository and request your first feature to start shipping AI directly into your codebase.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setActiveNav('repos')}
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl transition-all shadow-sm shadow-blue-500/20 cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Connect Repository</span>
+                        </button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
@@ -1266,6 +1441,120 @@ export default function ClientDashboard() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* ── Request New AI Feature Form Panel ── */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-5">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-blue-600" />
+                      Request New AI Feature PR
+                    </h2>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      Describe what you want Branchdeck to build. Our AST engine matches your architecture and opens a GitHub PR automatically.
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1">
+                    <GitPullRequest className="w-3 h-3" /> Auto PR Pipeline
+                  </span>
+                </div>
+
+                <form onSubmit={handleGenerateFeature} className="space-y-4">
+                  {genError && (
+                    <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold font-mono">PR Generation Failed</p>
+                        <p className="text-[11px] font-normal mt-0.5">{genError}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {genSuccess && (
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold rounded-xl space-y-2">
+                      <div className="flex items-start gap-2.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-sm text-emerald-950">Pull Request Created on GitHub!</p>
+                          <p className="text-xs text-emerald-800 mt-0.5">{genSuccess}</p>
+                        </div>
+                      </div>
+                      {genPrUrl && (
+                        <div className="pt-2 border-t border-emerald-200/80 flex items-center justify-between">
+                          <span className="text-[11px] text-emerald-700 font-medium">Review and merge the PR directly on GitHub:</span>
+                          <a
+                            href={genPrUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition-colors shadow-2xs font-mono"
+                          >
+                            View PR on GitHub
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Target Connected Repository <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={genRepoId}
+                        onChange={e => setGenRepoId(e.target.value)}
+                        disabled={genLoading}
+                        className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono font-semibold"
+                      >
+                        {repos.length > 0 ? (
+                          repos.map((r: any) => (
+                            <option key={r.id} value={r.id}>
+                              {r.name} ({r.github_url || 'GitHub PAT Connected'})
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">No Connected Repositories (Connect PAT in Repos tab)</option>
+                        )}
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2 space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Feature Description (Plain Language) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Add an AI Mock Interview Prep Question Generator for candidates"
+                        value={genDescription}
+                        onChange={e => setGenDescription(e.target.value)}
+                        disabled={genLoading}
+                        className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="submit"
+                      disabled={genLoading}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-2"
+                    >
+                      {genLoading ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          Analyzing AST & Creating GitHub PR...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-3.5 h-3.5" />
+                          Generate AI Feature PR
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
               </div>
 
               {/* Grid of Integration Cards */}
@@ -1397,45 +1686,159 @@ export default function ClientDashboard() {
               <div>
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Connected Repositories</h1>
                 <p className="text-xs text-slate-500 font-medium mt-1">
-                  Codebases parsed and monitored by Branchdeck AST tree-sitter engine
+                  Connect your GitHub repositories with fine-grained Personal Access Tokens (PAT) for Branchdeck monitoring
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {(repos.length > 0 ? repos : [
-                  { id: 'repo-1', name: 'branchdeck-core', default_branch: 'main', language: 'TypeScript', status: '100% Indexed' },
-                  { id: 'repo-2', name: 'ecommerce-platform', default_branch: 'main', language: 'Python', status: '100% Indexed' },
-                ]).map((repo: any) => (
-                  <div key={repo.id} className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold">
-                          <GitBranch className="w-5 h-5" />
-                        </div>
-                        <div>
-                          <h3 className="text-base font-bold text-slate-900">{repo.name}</h3>
-                          <p className="text-xs text-slate-500 font-medium mt-0.5">Default branch: {repo.default_branch || 'main'}</p>
-                        </div>
+              {/* ── Connect New Repository Card Form ── */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-5">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <GitBranch className="w-5 h-5 text-blue-600" />
+                      Connect a GitHub Repository
+                    </h2>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      Supply a repository URL and a fine-grained Personal Access Token to grant Branchdeck read/write access.
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
+                    Field-Level Encrypted
+                  </span>
+                </div>
+
+                <form onSubmit={handleConnectRepo} className="space-y-4">
+                  {connectError && (
+                    <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold">Connection Failed</p>
+                        <p className="text-[11px] font-normal mt-0.5">{connectError}</p>
                       </div>
-                      <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full">
-                        AST Indexed
-                      </span>
+                    </div>
+                  )}
+
+                  {connectSuccess && (
+                    <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl flex items-start gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold">Repository Connected & Token Encrypted</p>
+                        <p className="text-[11px] font-normal mt-0.5">{connectSuccess}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700">
+                        GitHub Repository URL or Path <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. owner/repo or https://github.com/owner/repo"
+                        value={connectUrl}
+                        onChange={e => setConnectUrl(e.target.value)}
+                        disabled={connectLoading}
+                        className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                      />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
-                      <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-bold">Primary Language</span>
-                        <span className="font-semibold text-slate-900">{repo.language || 'TypeScript'}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-400 block text-[10px] uppercase font-bold">Active AI Integrations</span>
-                        <span className="font-bold text-blue-700 font-mono">
-                          {integrations.filter(i => i.repo_id === repo.id || true).length} active
-                        </span>
-                      </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Fine-Grained Personal Access Token (PAT) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        placeholder="github_pat_11..."
+                        value={connectPat}
+                        onChange={e => setConnectPat(e.target.value)}
+                        disabled={connectLoading}
+                        className="w-full border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono"
+                      />
                     </div>
                   </div>
-                ))}
+
+                  <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 text-xs text-slate-600 space-y-1">
+                    <p className="font-bold text-slate-800 flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-blue-600" /> Token Scopes & Security Guarantee
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      Scope your fine-grained PAT to 1 repository with permissions: <code className="bg-white px-1.5 py-0.5 rounded border text-slate-700">Contents: Read & Write</code> and <code className="bg-white px-1.5 py-0.5 rounded border text-slate-700">Pull requests: Write</code>. Your token is validated against GitHub&apos;s API live before saving, encrypted server-side, and never logged or returned in API responses.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-end pt-1">
+                    <button
+                      type="submit"
+                      disabled={connectLoading}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs px-6 py-2.5 rounded-xl transition-all shadow-sm flex items-center gap-2"
+                    >
+                      {connectLoading ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          Validating PAT & Connecting...
+                        </>
+                      ) : (
+                        'Validate & Connect Repository'
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* ── Connected Repositories Grid ── */}
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 mb-3">Active Connected Repositories</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {(repos.length > 0 ? repos : [
+                    { id: 'repo-1', name: 'branchdeck-core', default_branch: 'main', language: 'TypeScript', has_pat: true, github_url: 'https://github.com/Resummit-ai/Resummit' },
+                  ]).map((repo: any) => (
+                    <div key={repo.id} className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold">
+                            <GitBranch className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-base font-bold text-slate-900">{repo.name}</h3>
+                            <a
+                              href={repo.github_url || `https://github.com/Resummit-ai/${repo.name}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="text-xs text-blue-600 hover:underline font-mono mt-0.5 flex items-center gap-1"
+                            >
+                              {repo.github_url || `https://github.com/Resummit-ai/${repo.name}`}
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        </div>
+                        <span className={`text-[11px] font-bold px-3 py-1 rounded-full border flex items-center gap-1 ${
+                          repo.has_pat
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}>
+                          <Shield className="w-3 h-3" />
+                          {repo.has_pat ? 'PAT Verified & Encrypted' : 'Demo Repo'}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
+                        <div>
+                          <span className="text-slate-400 block text-[10px] uppercase font-bold">Token Storage</span>
+                          <span className="font-mono font-semibold text-slate-900">
+                            {repo.has_pat ? 'Encrypted Ciphertext' : 'N/A'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[10px] uppercase font-bold">Status</span>
+                          <span className="font-bold text-blue-700">
+                            Ready for AST Parsing
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
