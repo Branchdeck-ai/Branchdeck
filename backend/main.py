@@ -1843,7 +1843,7 @@ async def get_github_app_install_url(
 @app.get("/api/github/callback")
 async def github_app_callback(
     installation_id: str,
-    state: Optional[str] = None,
+    state: str,
     setup_action: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
@@ -1851,16 +1851,7 @@ async def github_app_callback(
     from services.github_app import verify_signed_installation_state, get_installation_access_token
     from fastapi.responses import RedirectResponse
 
-    org_id = None
-    if state:
-        try:
-            org_id = verify_signed_installation_state(state, SUPABASE_JWT_SECRET)
-        except Exception as state_err:
-            logger.warning(f"[GitHub Callback] State verification failed: {state_err}")
-    
-    if not org_id:
-        # Fallback to demo org or default self-serve org
-        org_id = "org-demo-resummit" if not _is_production else "org-selfserve-default"
+    org_id = verify_signed_installation_state(state, SUPABASE_JWT_SECRET)
 
     # Exchange JWT for short-lived installation access token
     token = await get_installation_access_token(installation_id)
