@@ -1299,20 +1299,42 @@ class ProvisionOrgPayload(BaseModel):
     email: Optional[str] = None
 
 def provision_self_serve_org(user_id: str, email: Optional[str], db: Session) -> dict:
-    from database import OrgMembership, OrgSettings
-    membership = db.query(OrgMembership).filter_by(user_id=user_id).first()
+    from database import OrgMembership, OrgSettings, User
+    
+    # Store or update User record in DB
+    user_record = db.query(User).filter_by(id=user_id).first()
+    if not user_record and email:
+        user_record = db.query(User).filter_by(email=email).first()
+        
+    if not user_record:
+        user_record = User(id=user_id, email=email)
+        db.add(user_record)
+    else:
+        if email and not user_record.email:
+            user_record.email = email
+    
+    # Query membership by user_id or email
+    membership = db.query(OrgMembership).filter(
+        (OrgMembership.user_id == user_id) | (OrgMembership.user_id == email if email else False)
+    ).first()
+    
     if membership:
         org_id = membership.organization_id
+        # Ensure email also has an explicit OrgMembership row if distinct
+        if email and membership.user_id != email:
+            email_membership = db.query(OrgMembership).filter_by(user_id=email, organization_id=org_id).first()
+            if not email_membership:
+                db.add(OrgMembership(user_id=email, organization_id=org_id, role=membership.role))
+                
         settings = db.query(OrgSettings).filter_by(organization_id=org_id).first()
         if not settings:
             settings = OrgSettings(organization_id=org_id, monthly_budget_usd=10.0)
             db.add(settings)
-            db.commit()
-            db.refresh(settings)
+        db.commit()
         return {
             "success": True,
             "organization_id": org_id,
-            "monthly_budget_usd": float(settings.monthly_budget_usd),
+            "monthly_budget_usd": float(settings.monthly_budget_usd) if settings else 10.0,
             "role": membership.role,
             "is_new": False
         }
@@ -1320,12 +1342,16 @@ def provision_self_serve_org(user_id: str, email: Optional[str], db: Session) ->
     org_id = f"org-selfserve-{uuid.uuid4().hex[:8]}"
     membership = OrgMembership(user_id=user_id, organization_id=org_id, role="owner")
     db.add(membership)
+    if email and email != user_id:
+        email_membership = OrgMembership(user_id=email, organization_id=org_id, role="owner")
+        db.add(email_membership)
+        
     settings = OrgSettings(organization_id=org_id, monthly_budget_usd=10.0)
     db.add(settings)
     db.commit()
     db.refresh(membership)
     db.refresh(settings)
-    logger.info(f"Provisioned self-serve org {org_id} for user {user_id} (owner, $10.00 trial budget)")
+    logger.info(f"Provisioned self-serve org {org_id} for user {user_id} ({email}) (owner, $10.00 trial budget)")
     return {
         "success": True,
         "organization_id": org_id,
@@ -1526,50 +1552,33 @@ async def list_repos(
     db: Session = Depends(get_db),
     current_user: AuthenticatedUser = Depends(get_current_user)
 ):
-    """List repositories belonging to an organization or connected by user across all orgs."""
-    user_org_ids = [
-        om.organization_id for om in db.query(OrganizationMember).filter_by(user_id=current_user.user_id).all()
-    ]
+    """List repositories strictly belonging to organizations the authenticated user is a member of."""
+    user_memberships = db.query(OrgMembership).filter(
+        (OrgMembership.user_id == current_user.user_id) |
+        (OrgMembership.user_id == current_user.email if current_user.email else False)
+    ).all()
+    
+    user_org_ids = list({m.organization_id for m in user_memberships if m.organization_id})
     if current_user.organization_id and current_user.organization_id not in user_org_ids:
         user_org_ids.append(current_user.organization_id)
-    if organization_id and organization_id not in user_org_ids:
-        user_org_ids.append(organization_id)
 
+    if organization_id:
+        verify_org_membership(current_user.user_id, organization_id, db)
+        target_org_ids = [organization_id]
+    else:
+        target_org_ids = user_org_ids
+
+    # Query repos belonging strictly to the user's verified organizations
     repos = (
         db.query(Repository)
-        .filter(Repository.organization_id.in_(user_org_ids))
+        .filter(Repository.organization_id.in_(target_org_ids))
         .order_by(Repository.created_at.desc())
         .all()
     )
 
-    # Fallback 1: Query any connected repos in DB (with PAT, installation, or github_url)
-    if not repos:
-        repos = (
-            db.query(Repository)
-            .filter(
-                (Repository.github_installation_id.isnot(None))
-                | (Repository.github_pat_encrypted.isnot(None))
-                | (Repository.github_url.isnot(None))
-            )
-            .order_by(Repository.created_at.desc())
-            .all()
-        )
-
-    # Fallback 2: If DB has no repo records at all, return default Resummit repo row
-    if not repos:
-        repos_data = [
-            {
-                "id": "repo-resummit-001",
-                "name": "Resummit",
-                "organization_id": current_user.organization_id or "org-demo-resummit",
-                "github_url": "https://github.com/Resummit-ai/Resummit",
-                "has_pat": True,
-                "has_installation": True,
-                "created_at": None,
-            }
-        ]
-    else:
-        repos_data = [
+    return {
+        "success": True,
+        "repos": [
             {
                 "id": r.id,
                 "name": r.name,
@@ -1581,10 +1590,6 @@ async def list_repos(
             }
             for r in repos
         ]
-
-    return {
-        "success": True,
-        "repos": repos_data
     }
 
 

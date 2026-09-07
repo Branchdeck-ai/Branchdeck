@@ -134,6 +134,15 @@ class CodeChunk(Base):
         Index("idx_chunks_node", "node_id"),
     )
 
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(String(100), primary_key=True)
+    email = Column(String(255), nullable=True, index=True)
+    full_name = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 class OrgMembership(Base):
     __tablename__ = "org_memberships"
     
