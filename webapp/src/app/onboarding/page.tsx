@@ -111,8 +111,12 @@ export default function OnboardingPage() {
         const reposJson = await reposRes.json();
 
         if (reposJson.success && Array.isArray(reposJson.repos) && reposJson.repos.length > 0) {
-          console.log('[Branchdeck Onboarding] Organization already has connected repos. Redirecting to /dashboard...');
-          window.location.href = '/dashboard';
+          console.log('[Branchdeck Onboarding] Organization has connected repo. Advancing to Step 2...');
+          if (isMounted) {
+            setConnectedRepo(reposJson.repos[0]);
+            setStep(2);
+            setInitLoading(false);
+          }
           return;
         }
 

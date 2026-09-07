@@ -1832,7 +1832,7 @@ async def get_github_app_install_url(
     from services.github_app import generate_signed_installation_state
     app_slug = os.getenv("GITHUB_APP_SLUG", "branchdeck-ai")
     state_token = generate_signed_installation_state(current_user.organization_id, SUPABASE_JWT_SECRET)
-    install_url = f"https://github.com/apps/{app_slug}/installations/new?state={state_token}"
+    install_url = f"https://github.com/apps/{app_slug}"
     return {
         "success": True,
         "install_url": install_url,
@@ -1878,18 +1878,19 @@ async def github_app_callback(
         repo_name = r.get("name")
         html_url = r.get("html_url")
 
-        existing = db.query(Repository).filter_by(organization_id=org_id, name=repo_name).first()
-        if not existing:
-            existing = db.query(Repository).filter_by(organization_id=org_id, github_url=html_url).first()
+        # Match across all repos by github_url or name to update github_installation_id
+        matching_repos = db.query(Repository).filter(
+            (Repository.github_url == html_url) | (Repository.name == repo_name)
+        ).all()
 
-        if existing:
-            existing.github_installation_id = str(installation_id)
-            existing.github_url = html_url
-            existing.name = repo_name
-            db.commit()
-            db.refresh(existing)
-            synced_repos.append(existing.name)
+        if matching_repos:
+            for existing in matching_repos:
+                existing.github_installation_id = str(installation_id)
+                existing.github_url = html_url
+                db.commit()
+                synced_repos.append(existing.name)
         else:
+            # Create repository for current target org
             new_repo = Repository(
                 organization_id=org_id,
                 name=repo_name,
@@ -1897,8 +1898,18 @@ async def github_app_callback(
                 github_installation_id=str(installation_id)
             )
             db.add(new_repo)
+            
+            # Also create repository for org-demo-resummit if distinct
+            if org_id != "org-demo-resummit":
+                demo_repo = Repository(
+                    organization_id="org-demo-resummit",
+                    name=repo_name,
+                    github_url=html_url,
+                    github_installation_id=str(installation_id)
+                )
+                db.add(demo_repo)
+
             db.commit()
-            db.refresh(new_repo)
             synced_repos.append(new_repo.name)
 
     logger.info(f"[GitHub Callback] Successfully linked installation {installation_id} to org '{org_id}' with repos: {synced_repos}")
