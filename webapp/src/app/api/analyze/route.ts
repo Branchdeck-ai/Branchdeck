@@ -73,10 +73,10 @@ export async function POST(request: Request) {
     }
     const targetUrl = url.trim();
 
-    if (targetUrl === 'mock-ecommerce') {
+    if (targetUrl === 'mock-ecommerce' || targetUrl === 'Branchdeck Architecture' || targetUrl === 'demo') {
       return NextResponse.json({
         success: true,
-        source: 'mock-ecommerce',
+        source: 'Branchdeck Architecture',
         features: ECOMMERCE_DEMO_FEATURES,
         callGraph: ECOMMERCE_DEMO_CALLS
       });

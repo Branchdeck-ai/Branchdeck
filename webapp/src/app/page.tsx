@@ -8,6 +8,8 @@ import {
   ImpactAnalysisResult,
   generateFeaturesFromFiles,
   generateCallGraphFromFiles,
+  BRANCHDECK_DEMO_FEATURES,
+  BRANCHDECK_DEMO_CALLS,
   ECOMMERCE_DEMO_FEATURES,
   ECOMMERCE_DEMO_CALLS,
   normalizePath
@@ -307,7 +309,7 @@ export default function Dashboard() {
       isCurrentUser: true,
     } : null;
 
-    if (repoSource === 'mock-ecommerce' || repoSource === '') {
+    if (repoSource === 'Branchdeck Architecture' || repoSource === 'mock-ecommerce' || repoSource === '') {
       return [
         ...(localCurrentUser ? [localCurrentUser] : []),
         { id: 'demo1', name: 'Alex River', email: 'alex@company.com', avatar: 'AR', color: 'bg-sky-500', status: 'online' as const, role: 'Staff Engineer', currentFile: 'src/checkout/checkout.controller.ts', isCurrentUser: false },
@@ -1083,15 +1085,15 @@ export default function Dashboard() {
                 <button
                   onClick={() => {
                     handleLoadCallFlow('login');
-                    setFeatures(ECOMMERCE_DEMO_FEATURES);
-                    setCallNodes(ECOMMERCE_DEMO_CALLS.nodes);
-                    setCallEdges(ECOMMERCE_DEMO_CALLS.edges);
-                    setRepoSource('mock-ecommerce');
+                    setFeatures(BRANCHDECK_DEMO_FEATURES);
+                    setCallNodes(BRANCHDECK_DEMO_CALLS.nodes);
+                    setCallEdges(BRANCHDECK_DEMO_CALLS.edges);
+                    setRepoSource('Branchdeck Architecture');
                     setHasData(true);
                   }}
                   className="bg-neutral-900 hover:bg-neutral-800 text-white border border-white/10 text-xs font-semibold py-2.5 rounded-xl transition-all"
                 >
-                  Load E-commerce Demo
+                  Load Branchdeck Architecture Demo
                 </button>
               </div>
             </div>
@@ -1136,18 +1138,18 @@ export default function Dashboard() {
           onSignOut={handleLogOut}
           onOpenRepoPicker={() => {
             handleLoadCallFlow('login');
-            setFeatures(ECOMMERCE_DEMO_FEATURES);
-            setCallNodes(ECOMMERCE_DEMO_CALLS.nodes);
-            setCallEdges(ECOMMERCE_DEMO_CALLS.edges);
-            setRepoSource('mock-ecommerce');
+            setFeatures(BRANCHDECK_DEMO_FEATURES);
+            setCallNodes(BRANCHDECK_DEMO_CALLS.nodes);
+            setCallEdges(BRANCHDECK_DEMO_CALLS.edges);
+            setRepoSource('Branchdeck Architecture');
             setHasData(true);
           }}
           onLoadDemo={() => {
             handleLoadCallFlow('login');
-            setFeatures(ECOMMERCE_DEMO_FEATURES);
-            setCallNodes(ECOMMERCE_DEMO_CALLS.nodes);
-            setCallEdges(ECOMMERCE_DEMO_CALLS.edges);
-            setRepoSource('mock-ecommerce');
+            setFeatures(BRANCHDECK_DEMO_FEATURES);
+            setCallNodes(BRANCHDECK_DEMO_CALLS.nodes);
+            setCallEdges(BRANCHDECK_DEMO_CALLS.edges);
+            setRepoSource('Branchdeck Architecture');
             setHasData(true);
           }}
         />
@@ -1166,10 +1168,10 @@ export default function Dashboard() {
           }}
           onLoadDemo={() => {
             handleLoadCallFlow('login');
-            setFeatures(ECOMMERCE_DEMO_FEATURES);
-            setCallNodes(ECOMMERCE_DEMO_CALLS.nodes);
-            setCallEdges(ECOMMERCE_DEMO_CALLS.edges);
-            setRepoSource('mock-ecommerce');
+            setFeatures(BRANCHDECK_DEMO_FEATURES);
+            setCallNodes(BRANCHDECK_DEMO_CALLS.nodes);
+            setCallEdges(BRANCHDECK_DEMO_CALLS.edges);
+            setRepoSource('Branchdeck Architecture');
             setHasData(true);
           }}
           analyzing={analyzing}
@@ -1654,10 +1656,10 @@ export default function Dashboard() {
         }}
         onLoadDemo={() => {
           handleLoadCallFlow('login');
-          setFeatures(ECOMMERCE_DEMO_FEATURES);
-          setCallNodes(ECOMMERCE_DEMO_CALLS.nodes);
-          setCallEdges(ECOMMERCE_DEMO_CALLS.edges);
-          setRepoSource('mock-ecommerce');
+          setFeatures(BRANCHDECK_DEMO_FEATURES);
+          setCallNodes(BRANCHDECK_DEMO_CALLS.nodes);
+          setCallEdges(BRANCHDECK_DEMO_CALLS.edges);
+          setRepoSource('Branchdeck Architecture');
           setHasData(true);
         }}
         analyzing={analyzing}
