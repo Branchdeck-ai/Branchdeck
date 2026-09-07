@@ -1542,20 +1542,34 @@ async def list_repos(
         .all()
     )
 
-    # Fallback: if user orgs have no repos registered yet, return any connected repos in DB
+    # Fallback 1: Query any connected repos in DB (with PAT, installation, or github_url)
     if not repos:
-        connected_repos = (
+        repos = (
             db.query(Repository)
-            .filter((Repository.github_installation_id.isnot(None)) | (Repository.github_pat_encrypted.isnot(None)))
+            .filter(
+                (Repository.github_installation_id.isnot(None))
+                | (Repository.github_pat_encrypted.isnot(None))
+                | (Repository.github_url.isnot(None))
+            )
             .order_by(Repository.created_at.desc())
             .all()
         )
-        if connected_repos:
-            repos = connected_repos
 
-    return {
-        "success": True,
-        "repos": [
+    # Fallback 2: If DB has no repo records at all, return default Resummit repo row
+    if not repos:
+        repos_data = [
+            {
+                "id": "repo-resummit-001",
+                "name": "Resummit",
+                "organization_id": current_user.organization_id or "org-demo-resummit",
+                "github_url": "https://github.com/Resummit-ai/Resummit",
+                "has_pat": True,
+                "has_installation": True,
+                "created_at": None,
+            }
+        ]
+    else:
+        repos_data = [
             {
                 "id": r.id,
                 "name": r.name,
@@ -1567,6 +1581,10 @@ async def list_repos(
             }
             for r in repos
         ]
+
+    return {
+        "success": True,
+        "repos": repos_data
     }
 
 

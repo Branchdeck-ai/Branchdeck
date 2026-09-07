@@ -418,24 +418,41 @@ export default function OnboardingPage() {
                     Install our official GitHub App onto your target repository with 1-click. Mints short-lived installation access tokens automatically without managing manual PATs.
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleConnectGitHubApp}
-                  disabled={connectLoading}
-                  className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 active:scale-95 disabled:opacity-50 text-white font-bold text-xs px-8 py-3.5 rounded-xl transition-all shadow-lg inline-flex items-center justify-center gap-2.5 cursor-pointer"
-                >
-                  {connectLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      <span>Redirecting to GitHub...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Connect via GitHub App</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleConnectGitHubApp}
+                    disabled={connectLoading}
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-500 active:scale-95 disabled:opacity-50 text-white font-bold text-xs px-8 py-3.5 rounded-xl transition-all shadow-lg inline-flex items-center justify-center gap-2.5 cursor-pointer"
+                  >
+                    {connectLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Redirecting to GitHub...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Connect via GitHub App</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const defaultRepo = { name: 'Resummit', github_url: 'https://github.com/Resummit-ai/Resummit' };
+                      setConnectedRepo(defaultRepo);
+                      if (typeof window !== 'undefined') {
+                        localStorage.setItem('branchdeck_connected_repo', JSON.stringify(defaultRepo));
+                      }
+                      setStep(2);
+                    }}
+                    className="w-full sm:w-auto bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs px-6 py-3.5 rounded-xl transition-all border border-slate-700 inline-flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Already Installed? Continue to Step 2</span>
+                    <ChevronRight className="w-4 h-4 text-blue-400" />
+                  </button>
+                </div>
               </div>
 
               {/* PAT Fallback Toggle */}

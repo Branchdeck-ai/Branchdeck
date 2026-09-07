@@ -6,10 +6,12 @@ export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('Authorization');
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organization_id') || 'org-demo-resummit';
+    const organizationId = searchParams.get('organization_id');
 
     const upstream = new URL(`${BACKEND_URL}/api/dashboard/repos`);
-    upstream.searchParams.set('organization_id', organizationId);
+    if (organizationId) {
+      upstream.searchParams.set('organization_id', organizationId);
+    }
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
