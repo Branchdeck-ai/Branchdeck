@@ -8,8 +8,6 @@ import {
   ImpactAnalysisResult,
   generateFeaturesFromFiles,
   generateCallGraphFromFiles,
-  BRANCHDECK_DEMO_FEATURES,
-  BRANCHDECK_DEMO_CALLS,
   ECOMMERCE_DEMO_FEATURES,
   ECOMMERCE_DEMO_CALLS,
   normalizePath
@@ -100,8 +98,9 @@ export default function Dashboard() {
           }
           console.log('[Branchdeck Auth] Redirecting to /onboarding...');
           window.location.href = '/onboarding';
-        } else {
-          console.log('[Branchdeck Auth] User already onboarded or skip_redirect present. Staying on page.');
+        } else if (!skipRedirect) {
+          console.log('[Branchdeck Auth] User onboarded. Navigating directly to /dashboard...');
+          window.location.href = '/dashboard';
         }
       }
     };
@@ -115,21 +114,23 @@ export default function Dashboard() {
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Branchdeck Auth] onAuthStateChange event:', event, 'session:', session ? `User ${session.user?.id}` : 'None');
-      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED')) {
-        handleSignedInSession(session, `onAuthStateChange(${event})`);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      console.log('[Branchdeck Auth] onAuthStateChange event:', _event, session ? `User ${session.user?.id}` : 'No session');
+      if (session) {
+        handleSignedInSession(session, 'onAuthStateChange');
       } else {
-        setSession(session);
+        setSession(null);
         setAuthLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Helper: open auth modal or redirect logged-in user directly
-  const openAuth = async (mode: 'signin' | 'signup' = 'signin') => {
+  const openAuth = async (mode: 'signin' | 'signup' = 'signin', targetUrl: string = '/dashboard') => {
     console.log('[Branchdeck Auth] "Get Started" / "Sign In" clicked. Requested mode:', mode);
     let activeSession = session;
     if (!activeSession && isSupabaseConfigured) {
@@ -309,7 +310,7 @@ export default function Dashboard() {
       isCurrentUser: true,
     } : null;
 
-    if (repoSource === 'Branchdeck Architecture' || repoSource === 'mock-ecommerce' || repoSource === '') {
+    if (repoSource === 'mock-ecommerce' || repoSource === '') {
       return [
         ...(localCurrentUser ? [localCurrentUser] : []),
         { id: 'demo1', name: 'Alex River', email: 'alex@company.com', avatar: 'AR', color: 'bg-sky-500', status: 'online' as const, role: 'Staff Engineer', currentFile: 'src/checkout/checkout.controller.ts', isCurrentUser: false },
@@ -1085,15 +1086,15 @@ export default function Dashboard() {
                 <button
                   onClick={() => {
                     handleLoadCallFlow('login');
-                    setFeatures(BRANCHDECK_DEMO_FEATURES);
-                    setCallNodes(BRANCHDECK_DEMO_CALLS.nodes);
-                    setCallEdges(BRANCHDECK_DEMO_CALLS.edges);
-                    setRepoSource('Branchdeck Architecture');
+                    setFeatures(ECOMMERCE_DEMO_FEATURES);
+                    setCallNodes(ECOMMERCE_DEMO_CALLS.nodes);
+                    setCallEdges(ECOMMERCE_DEMO_CALLS.edges);
+                    setRepoSource('mock-ecommerce');
                     setHasData(true);
                   }}
                   className="bg-neutral-900 hover:bg-neutral-800 text-white border border-white/10 text-xs font-semibold py-2.5 rounded-xl transition-all"
                 >
-                  Load Branchdeck Architecture Demo
+                  Load E-commerce Demo
                 </button>
               </div>
             </div>
@@ -1136,22 +1137,8 @@ export default function Dashboard() {
           onSignIn={() => openAuth('signin')}
           onSignUp={() => openAuth('signup')}
           onSignOut={handleLogOut}
-          onOpenRepoPicker={() => {
-            handleLoadCallFlow('login');
-            setFeatures(BRANCHDECK_DEMO_FEATURES);
-            setCallNodes(BRANCHDECK_DEMO_CALLS.nodes);
-            setCallEdges(BRANCHDECK_DEMO_CALLS.edges);
-            setRepoSource('Branchdeck Architecture');
-            setHasData(true);
-          }}
-          onLoadDemo={() => {
-            handleLoadCallFlow('login');
-            setFeatures(BRANCHDECK_DEMO_FEATURES);
-            setCallNodes(BRANCHDECK_DEMO_CALLS.nodes);
-            setCallEdges(BRANCHDECK_DEMO_CALLS.edges);
-            setRepoSource('Branchdeck Architecture');
-            setHasData(true);
-          }}
+          onOpenRepoPicker={() => { window.location.href = '/dashboard'; }}
+          onLoadDemo={() => { window.location.href = '/dashboard'; }}
         />
         <AuthModal
           isOpen={isAuthOpen}
@@ -1168,10 +1155,10 @@ export default function Dashboard() {
           }}
           onLoadDemo={() => {
             handleLoadCallFlow('login');
-            setFeatures(BRANCHDECK_DEMO_FEATURES);
-            setCallNodes(BRANCHDECK_DEMO_CALLS.nodes);
-            setCallEdges(BRANCHDECK_DEMO_CALLS.edges);
-            setRepoSource('Branchdeck Architecture');
+            setFeatures(ECOMMERCE_DEMO_FEATURES);
+            setCallNodes(ECOMMERCE_DEMO_CALLS.nodes);
+            setCallEdges(ECOMMERCE_DEMO_CALLS.edges);
+            setRepoSource('mock-ecommerce');
             setHasData(true);
           }}
           analyzing={analyzing}
@@ -1656,10 +1643,10 @@ export default function Dashboard() {
         }}
         onLoadDemo={() => {
           handleLoadCallFlow('login');
-          setFeatures(BRANCHDECK_DEMO_FEATURES);
-          setCallNodes(BRANCHDECK_DEMO_CALLS.nodes);
-          setCallEdges(BRANCHDECK_DEMO_CALLS.edges);
-          setRepoSource('Branchdeck Architecture');
+          setFeatures(ECOMMERCE_DEMO_FEATURES);
+          setCallNodes(ECOMMERCE_DEMO_CALLS.nodes);
+          setCallEdges(ECOMMERCE_DEMO_CALLS.edges);
+          setRepoSource('mock-ecommerce');
           setHasData(true);
         }}
         analyzing={analyzing}
