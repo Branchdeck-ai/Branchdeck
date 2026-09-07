@@ -1134,7 +1134,14 @@ export default function Dashboard() {
           onSignIn={() => openAuth('signin')}
           onSignUp={() => openAuth('signup')}
           onSignOut={handleLogOut}
-          onOpenRepoPicker={() => setIsRepoModalOpen(true)}
+          onOpenRepoPicker={() => {
+            handleLoadCallFlow('login');
+            setFeatures(ECOMMERCE_DEMO_FEATURES);
+            setCallNodes(ECOMMERCE_DEMO_CALLS.nodes);
+            setCallEdges(ECOMMERCE_DEMO_CALLS.edges);
+            setRepoSource('mock-ecommerce');
+            setHasData(true);
+          }}
           onLoadDemo={() => {
             handleLoadCallFlow('login');
             setFeatures(ECOMMERCE_DEMO_FEATURES);
