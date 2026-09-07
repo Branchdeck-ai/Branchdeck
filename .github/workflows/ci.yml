@@ -44,6 +44,8 @@ jobs:
           pytest
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+          ALLOW_SQLITE_FALLBACK: "true"
+          SUPABASE_JWT_SECRET: "branchdeck-super-secret-jwt-key-2026"
 
   frontend-check:
     runs-on: ubuntu-latest
