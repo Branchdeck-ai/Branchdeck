@@ -167,7 +167,13 @@ class AuthenticatedUser:
         self.role = role
 
 def get_current_user(authorization: Optional[str] = Header(None, alias="Authorization"), db: Session = Depends(get_db)) -> AuthenticatedUser:
-    if not authorization or not authorization.startswith("Bearer "):
+    token = None
+    if authorization and authorization.startswith("Bearer "):
+        parts = authorization.split(" ", 1)
+        if len(parts) > 1 and parts[1].strip():
+            token = parts[1].strip()
+
+    if not token:
         if not _is_production:
             user_id = "user-demo-001"
             email = "demo.client@branchdeck.com"
@@ -176,15 +182,19 @@ def get_current_user(authorization: Optional[str] = Header(None, alias="Authoriz
         else:
             raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
     else:
-        token = authorization.split(" ")[1]
         payload = verify_jwt_hs256(token, SUPABASE_JWT_SECRET)
         user_id = payload.get("sub")
         email = payload.get("email")
         role = payload.get("role")
     
     if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token: missing subject (user_id)")
-        raise HTTPException(status_code=401, detail="Invalid token: missing subject (user_id)")
+        if not _is_production:
+            user_id = "user-demo-001"
+            email = "demo.client@branchdeck.com"
+            role = "authenticated"
+            payload = {}
+        else:
+            raise HTTPException(status_code=401, detail="Invalid token: missing subject (user_id)")
         
     logger.info(f"[Branchdeck Auth] Extracted user identity from token: user_id={user_id}, email={email}")
     # Resolve organization context from SQL database mapping table
