@@ -30,6 +30,56 @@ function BranchdeckLogo({ className = "w-7 h-7 object-contain rounded-lg" }: { c
   );
 }
 
+function getFeatureSuggestions(repoName?: string) {
+  const name = (repoName || '').toLowerCase();
+  
+  if (name.includes('resummit') || name.includes('interview') || name.includes('resume') || name.includes('career') || name.includes('hire') || name.includes('job')) {
+    return {
+      placeholder: 'e.g. Build a mock interview question generator service with technical, behavioral, and system design categories.',
+      suggestions: [
+        'Mock Interview Question Generator Service',
+        'AI Resume Scoring & Feedback Analyzer',
+        'Behavioral Answer Feedback Engine',
+        'Semantic Candidate Skill Matcher',
+      ]
+    };
+  }
+  
+  if (name.includes('shop') || name.includes('store') || name.includes('cart') || name.includes('commerce') || name.includes('market')) {
+    return {
+      placeholder: 'e.g. Build an AI product recommendation engine based on user cart contents and purchase history.',
+      suggestions: [
+        'AI Personalized Product Recommendation Engine',
+        'Smart Customer Review Sentiment Analyzer',
+        'Automated Order Support Assistant',
+        'AI Checkout Conversion Predictor',
+      ]
+    };
+  }
+
+  if (name.includes('chat') || name.includes('support') || name.includes('bot') || name.includes('desk') || name.includes('help')) {
+    return {
+      placeholder: 'e.g. Build an AI support assistant that resolves standard customer FAQs and triages incoming tickets.',
+      suggestions: [
+        'AI Customer Support Chat Handler',
+        'Automated Support Ticket Categorizer',
+        'Semantic Knowledge Base Search Engine',
+        'AI Response Escalation Analyzer',
+      ]
+    };
+  }
+
+  return {
+    placeholder: `e.g. Build an AI feature generator service tailored for ${repoName || 'your repository'}.`,
+    suggestions: [
+      `AI Feature Assistant for ${repoName || 'Software'}`,
+      'Semantic Code Search API Integration',
+      'AI Customer Support Chat Handler',
+      'Automated PDF & Document Extractor',
+    ]
+  };
+}
+
 export default function OnboardingPage() {
   const [session, setSession] = useState<any>(null);
   const [orgData, setOrgData] = useState<any>(null);
@@ -577,7 +627,7 @@ export default function OnboardingPage() {
                     </div>
                   </div>
                   <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-full">
-                    PAT Connected & Encrypted
+                    {connectedRepo.has_installation || connectedRepo.github_installation_id ? 'GitHub App Connected' : 'PAT Connected & Encrypted'}
                   </span>
                 </div>
               )}
@@ -593,42 +643,40 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              <form onSubmit={handleGenerateFeature} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-300">
-                    Feature Description <span className="text-rose-400">*</span>
-                  </label>
-                  <textarea
-                    rows={4}
-                    required
-                    value={featureDesc}
-                    onChange={(e) => setFeatureDesc(e.target.value)}
-                    placeholder="e.g. Build a mock interview question generator service with technical, behavioral, and system design categories."
-                    className="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-sans resize-none"
-                  />
-                </div>
+              {(() => {
+                const suggestionsData = getFeatureSuggestions(connectedRepo?.name);
+                return (
+                  <form onSubmit={handleGenerateFeature} className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-300">
+                        Feature Description <span className="text-rose-400">*</span>
+                      </label>
+                      <textarea
+                        rows={4}
+                        required
+                        value={featureDesc}
+                        onChange={(e) => setFeatureDesc(e.target.value)}
+                        placeholder={suggestionsData.placeholder}
+                        className="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-sans resize-none"
+                      />
+                    </div>
 
-                {/* Preset Suggestions */}
-                <div className="space-y-1.5">
-                  <p className="text-[11px] font-semibold text-slate-400">Or pick a common AI feature pattern:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      'Mock Interview Question Generator Service',
-                      'Semantic Code Search API Integration',
-                      'AI Customer Support Chat Handler',
-                      'Automated PDF Document Extractor',
-                    ].map((suggestion) => (
-                      <button
-                        key={suggestion}
-                        type="button"
-                        onClick={() => setFeatureDesc(suggestion)}
-                        className="text-xs bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 rounded-xl px-3 py-1.5 transition-colors"
-                      >
-                        + {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                    {/* Preset Suggestions */}
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-semibold text-slate-400">Or pick a common AI feature pattern:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {suggestionsData.suggestions.map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            onClick={() => setFeatureDesc(suggestion)}
+                            className="text-xs bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 rounded-xl px-3 py-1.5 transition-colors cursor-pointer"
+                          >
+                            + {suggestion}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
                 <div className="pt-4 flex items-center justify-between">
                   <button
@@ -661,7 +709,9 @@ export default function OnboardingPage() {
                   </button>
                 </div>
               </form>
-            </div>
+            );
+          })()}
+        </div>
           )}
 
           {/* STEP 3: Confirmation */}
