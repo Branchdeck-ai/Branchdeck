@@ -16,29 +16,27 @@ export async function POST(request: Request) {
       'X-GitHub-Delivery': delivery,
     };
 
+    let res: Response;
     try {
-      const res = await fetch(`${BACKEND_URL}/api/github/webhook`, {
+      res = await fetch(`${BACKEND_URL}/api/github/webhook`, {
         method: 'POST',
         headers,
         body: rawBody,
       });
-
-      if (res.ok) {
-        const data = await res.json().catch(() => ({ success: true }));
-        return NextResponse.json(data, { status: 200 });
-      }
-    } catch (backendErr) {
-      console.warn('[Webhook Proxy] Backend unreachable, acknowledging webhook directly:', backendErr);
+    } catch (backendErr: any) {
+      console.error('[Webhook Proxy Error] Backend unreachable:', backendErr);
+      return NextResponse.json(
+        { success: false, error: 'Backend webhook service unavailable', detail: backendErr?.message || 'Connection refused' },
+        { status: 502 }
+      );
     }
 
-    return NextResponse.json(
-      { success: true, event, message: 'GitHub Webhook received and acknowledged by Branchdeck' },
-      { status: 200 }
-    );
+    const data = await res.json().catch(() => ({ success: res.ok }));
+    return NextResponse.json(data, { status: res.status });
   } catch (err: any) {
     return NextResponse.json(
-      { success: true, message: 'Webhook received and acknowledged' },
-      { status: 200 }
+      { success: false, error: err?.message || 'Webhook proxy error' },
+      { status: 500 }
     );
   }
 }
