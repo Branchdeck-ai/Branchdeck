@@ -38,7 +38,7 @@ export default function DashboardStorePage() {
   useEffect(() => {
     async function init() {
       try {
-        if (!isSupabaseConfigured()) {
+        if (!isSupabaseConfigured) {
           setLoading(false);
           return;
         }

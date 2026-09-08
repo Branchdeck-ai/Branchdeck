@@ -800,13 +800,16 @@ export default function ClientDashboard() {
   }, []);
 
   // ── Authenticated fetch ─────────────────────────────────────────────────────
-  const authedFetch = useCallback(async (url: string) => {
+  const authedFetch = useCallback(async (url: string, init?: RequestInit) => {
     const token = session?.access_token || '';
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...(init?.headers as Record<string, string> || {}),
+    };
     const res = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      ...init,
+      headers,
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
@@ -834,12 +837,12 @@ export default function ClientDashboard() {
       } else {
         // Authenticated user with no orgs yet: clear orgs so backend get_current_user provisions self-serve org
         setOrgs([]);
-        setActiveOrg(null);
+        setActiveOrg('');
       }
     }).catch((err) => {
       console.error('[Branchdeck Dashboard] Error fetching user organizations:', err);
       setOrgs([]);
-      setActiveOrg(null);
+      setActiveOrg('');
     });
   }, [authedFetch, session]);
 
