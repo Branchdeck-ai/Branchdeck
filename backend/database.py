@@ -226,6 +226,7 @@ class Integration(Base):
     # status: in_progress | pr_ready | merged | active_retainer
     status = Column(String(50), nullable=False, default="in_progress")
     pr_url = Column(String(500), nullable=True)
+    model = Column(String(50), nullable=True, default="gemini-2.5-flash")
     # AST pattern-match score 0.0–1.0 (e.g. 0.994 = 99.4 %).
     # Nullable: populated by the AST engine on integration delivery; NULL until first analysis.
     ast_match_score = Column(Float, nullable=True)
@@ -251,6 +252,7 @@ class CostLog(Base):
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     integration_id = Column(String(36), ForeignKey("integrations.id", ondelete="CASCADE"), nullable=False)
+    model = Column(String(50), nullable=True, default="gemini-2.5-flash")
     tokens_in = Column(Integer, nullable=False, default=0)
     tokens_out = Column(Integer, nullable=False, default=0)
     cost_usd = Column(Float, nullable=False, default=0.0)
@@ -342,7 +344,7 @@ def init_db():
             Base.metadata.create_all(bind=engine)
             logger.info("Database initialized successfully.")
 
-            # Ensure repos table has github_pat_encrypted and github_url columns
+            # Ensure repos and integrations tables have updated columns
             try:
                 with engine.begin() as conn:
                     if engine.dialect.name == "sqlite":
@@ -353,12 +355,22 @@ def init_db():
                             conn.execute(text("ALTER TABLE repos ADD COLUMN github_url VARCHAR(255)"))
                         if "github_installation_id" not in cols:
                             conn.execute(text("ALTER TABLE repos ADD COLUMN github_installation_id VARCHAR(100)"))
+                        
+                        integ_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(integrations)")).fetchall()]
+                        if "model" not in integ_cols:
+                            conn.execute(text("ALTER TABLE integrations ADD COLUMN model VARCHAR(50)"))
+
+                        cost_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(cost_logs)")).fetchall()]
+                        if "model" not in cost_cols:
+                            conn.execute(text("ALTER TABLE cost_logs ADD COLUMN model VARCHAR(50)"))
                     else:
                         conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_pat_encrypted TEXT"))
                         conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_url VARCHAR(255)"))
                         conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_installation_id VARCHAR(100)"))
+                        conn.execute(text("ALTER TABLE integrations ADD COLUMN IF NOT EXISTS model VARCHAR(50)"))
+                        conn.execute(text("ALTER TABLE cost_logs ADD COLUMN IF NOT EXISTS model VARCHAR(50)"))
             except Exception as col_err:
-                logger.warning(f"Could not ensure repos columns: {col_err}")
+                logger.warning(f"Could not ensure database columns: {col_err}")
             # Create pgvector IVFFlat index on code_chunks.embedding for fast ANN search
             # Runs as IF NOT EXISTS so it is safe to call on every startup
             if "postgresql" in DATABASE_URL:
