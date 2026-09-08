@@ -34,6 +34,7 @@ import {
   Plus,
 } from 'lucide-react';
 import ContactModal from '@/components/ContactModal';
+import FeatureCatalog from '@/components/FeatureCatalog';
 
 function BranchdeckLogo({ className = "w-7 h-7 object-contain rounded-lg" }: { className?: string }) {
   return (
@@ -1413,6 +1414,46 @@ export default function ClientDashboard() {
                 </div>
               </div>
             </>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+             TAB: FEATURE STORE VIEW
+             ══════════════════════════════════════════════════════════════════ */}
+          {activeNav === 'store' && (
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">AI Feature Store</h1>
+                <p className="text-xs text-slate-500 font-medium mt-1">
+                  Browse domain-tailored AI feature templates matched to your codebase's AST graph conventions.
+                </p>
+              </div>
+
+              <FeatureCatalog
+                repoName={repos[0]?.name || 'Resummit'}
+                onGenerate={async (desc, model) => {
+                  try {
+                    const targetRepoId = repos[0]?.id || '';
+                    const res = await authedFetch('/api/dashboard/integrations/generate', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        organization_id: activeOrg,
+                        repo_id: targetRepoId,
+                        feature_description: desc,
+                        model: model,
+                      })
+                    });
+                    if (res.success && res.integration?.pr_url) {
+                      window.open(res.integration.pr_url, '_blank');
+                    }
+                    fetchDashboard();
+                  } catch (e) {
+                    console.error('Failed to generate store feature:', e);
+                  }
+                }}
+                loading={false}
+              />
+            </div>
           )}
 
           {/* ══════════════════════════════════════════════════════════════════
