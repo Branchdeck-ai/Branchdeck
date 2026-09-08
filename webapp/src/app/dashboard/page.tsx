@@ -815,6 +815,19 @@ export default function ClientDashboard() {
     return res.json();
   }, [session]);
 
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('[Branchdeck Auth] Sign out error:', err);
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = '/login';
+    }
+  };
+
   // ── Load orgs ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!session?.access_token) {
@@ -826,7 +839,7 @@ export default function ClientDashboard() {
       return;
     }
     console.log('[Branchdeck Dashboard] Fetching user organizations from backend...');
-    authedFetch('/api/dashboard/organizations').then((d) => {
+    authedFetch('/api/dashboard/organizations').then(async (d) => {
       console.log('[Branchdeck Dashboard] Loaded user organizations from backend:', d.organizations);
       if (d.success && Array.isArray(d.organizations) && d.organizations.length > 0) {
         setOrgs(d.organizations);
@@ -835,21 +848,32 @@ export default function ClientDashboard() {
           return exists ? prev : (d.organizations[0].id || d.organizations[0].organization_id);
         });
       } else {
-        // Authenticated user with no orgs yet: clear orgs so backend get_current_user provisions self-serve org
-        setOrgs([]);
-        setActiveOrg('');
+        try {
+          const provRes = await authedFetch('/api/dashboard/organizations/provision', {
+            method: 'POST',
+            body: JSON.stringify({
+              user_id: session.user?.id,
+              email: session.user?.email,
+            })
+          });
+          if (provRes.success && provRes.organization_id) {
+            const newOrg = { id: provRes.organization_id, role: provRes.role || 'owner' };
+            setOrgs([newOrg]);
+            setActiveOrg(provRes.organization_id);
+          }
+        } catch (provErr) {
+          console.error('[Branchdeck Dashboard] Error provisioning self-serve organization:', provErr);
+        }
       }
     }).catch((err) => {
       console.error('[Branchdeck Dashboard] Error fetching user organizations:', err);
-      setOrgs([]);
-      setActiveOrg('');
     });
   }, [authedFetch, session]);
 
   // ── Load dashboard data & repos ─────────────────────────────────────────────
   const fetchDashboard = useCallback(async () => {
-    const currentOrg = activeOrg;
-    if (!currentOrg) return;
+    const isUserAuth = Boolean(session?.access_token);
+    const currentOrg = activeOrg || (isUserAuth ? `org-selfserve-${session?.user?.id?.slice(0, 8) || 'user'}` : 'org-demo-acme');
 
     setLoading(true);
     setError(null);
@@ -857,44 +881,88 @@ export default function ClientDashboard() {
     try {
       const days = rangeDays(range);
       const [summaryData, integrationData, repoData] = await Promise.all([
-        authedFetch(`/api/dashboard/summary?days=${days}&organization_id=${currentOrg}`),
-        authedFetch(`/api/dashboard/integrations?organization_id=${currentOrg}`),
+        authedFetch(`/api/dashboard/summary?days=${days}&organization_id=${currentOrg}`).catch(() => ({ success: false })),
+        authedFetch(`/api/dashboard/integrations?organization_id=${currentOrg}`).catch(() => ({ success: false, integrations: [] })),
         authedFetch(`/api/dashboard/repos?organization_id=${currentOrg}`).catch(() => ({ success: false, repos: [] })),
       ]);
 
-      const isDemoOrg = currentOrg.includes('demo') || currentOrg.includes('org_demo') || currentOrg.includes('org-demo');
+      const isDemoOrg = !isUserAuth && (currentOrg.includes('demo') || currentOrg.includes('org_demo') || currentOrg.includes('org-demo'));
 
-      if (summaryData.success && summaryData.integrations && (summaryData.integrations.total > 0 || !isDemoOrg)) {
+      if (summaryData.success && summaryData.integrations) {
         setSummary(summaryData);
         if (typeof summaryData.monthly_budget_usd === 'number') {
           setBudgetCap(summaryData.monthly_budget_usd);
         }
-      } else {
+      } else if (isDemoOrg) {
         setSummary(DEMO_SUMMARY);
+        setBudgetCap(500);
+      } else {
+        setSummary({
+          success: true,
+          window_days: 30,
+          monthly_budget_usd: 500,
+          cost_usd: 0,
+          avg_latency_ms: 0,
+          total_calls: 0,
+          integrations: {
+            total: 0,
+            by_status: {},
+            by_type: {},
+          },
+          tokens: { in: 0, out: 0, total: 0 },
+          per_integration: [],
+          daily: [],
+        });
         setBudgetCap(500);
       }
 
-      if (integrationData.success && Array.isArray(integrationData.integrations) && (integrationData.integrations.length > 0 || !isDemoOrg)) {
+      if (integrationData.success && Array.isArray(integrationData.integrations)) {
         setIntegrations(integrationData.integrations);
-      } else {
+      } else if (isDemoOrg) {
         setIntegrations(DEMO_INTEGRATIONS);
+      } else {
+        setIntegrations([]);
       }
 
-      if (repoData.success && Array.isArray(repoData.repos) && (repoData.repos.length > 0 || !isDemoOrg)) {
+      if (repoData.success && Array.isArray(repoData.repos)) {
         setRepos(repoData.repos);
-      } else {
+      } else if (isDemoOrg) {
         setRepos(DEMO_REPOS);
+      } else {
+        setRepos([]);
       }
     } catch (err: any) {
-      console.error('[Branchdeck Dashboard] Error loading dashboard metrics, using demo metrics fallback:', err);
-      setSummary(DEMO_SUMMARY);
-      setIntegrations(DEMO_INTEGRATIONS);
-      setRepos(DEMO_REPOS);
-      setBudgetCap(500);
+      console.error('[Branchdeck Dashboard] Error loading dashboard metrics:', err);
+      if (isUserAuth) {
+        setSummary({
+          success: true,
+          window_days: 30,
+          monthly_budget_usd: 500,
+          cost_usd: 0,
+          avg_latency_ms: 0,
+          total_calls: 0,
+          integrations: {
+            total: 0,
+            by_status: {},
+            by_type: {},
+          },
+          tokens: { in: 0, out: 0, total: 0 },
+          per_integration: [],
+          daily: [],
+        });
+        setIntegrations([]);
+        setRepos([]);
+        setBudgetCap(500);
+      } else {
+        setSummary(DEMO_SUMMARY);
+        setIntegrations(DEMO_INTEGRATIONS);
+        setRepos(DEMO_REPOS);
+        setBudgetCap(500);
+      }
     } finally {
       setLoading(false);
     }
-  }, [activeOrg, range, authedFetch]);
+  }, [activeOrg, range, authedFetch, session]);
 
   useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
@@ -1033,7 +1101,7 @@ export default function ClientDashboard() {
                 </p>
               </div>
               <button
-                onClick={() => supabase.auth.signOut()}
+                onClick={handleSignOut}
                 className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
                 title="Sign out"
               >
@@ -1065,7 +1133,7 @@ export default function ClientDashboard() {
                 className="flex items-center gap-2 text-xs font-bold text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-colors shadow-2xs"
               >
                 <Building2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                <span className="max-w-[120px] sm:max-w-[160px] truncate">{activeOrg || 'org_demo_123'}</span>
+                <span className="max-w-[120px] sm:max-w-[160px] truncate">{activeOrg || (session ? 'Self-Serve Account' : 'org-demo-acme')}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
               </button>
               {orgMenuOpen && orgs.length > 0 && (
@@ -1136,7 +1204,7 @@ export default function ClientDashboard() {
                   </span>
                 </div>
                 <button
-                  onClick={() => supabase.auth.signOut()}
+                  onClick={handleSignOut}
                   className="p-1.5 sm:p-2 rounded-xl hover:bg-red-50 hover:text-red-600 text-slate-500 hover:border-red-200 transition-colors border border-slate-200/80 flex items-center justify-center"
                   title="Sign out"
                 >
