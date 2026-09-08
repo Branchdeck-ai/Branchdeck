@@ -246,7 +246,15 @@ export default function OnboardingPage() {
     setConnectLoading(true);
     setConnectError(null);
     try {
-      const token = session?.access_token || '';
+      let token = session?.access_token;
+      if (!token && isSupabaseConfigured) {
+        const { data: { session: activeSession } } = await supabase.auth.getSession();
+        token = activeSession?.access_token;
+      }
+      if (!token) {
+        throw new Error('Authentication required. Please sign in to connect repository.');
+      }
+
       const res = await fetch('/api/github/install-url', {
         headers: { Authorization: `Bearer ${token}` },
       });
