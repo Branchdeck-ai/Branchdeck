@@ -19,6 +19,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import FeatureCatalog from '@/components/FeatureCatalog';
 
 function BranchdeckLogo({ className = "w-7 h-7 object-contain rounded-lg" }: { className?: string }) {
   return (
@@ -317,10 +318,9 @@ export default function OnboardingPage() {
   };
 
   // Handler for Step 2: Request AI Feature
-  const handleGenerateFeature = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!featureDesc.trim()) {
-      setGenError('Please describe the AI feature you want to build.');
+  const handleGenerateFeature = async (featureDescription: string, model: string = 'gemini-2.5-flash') => {
+    if (!featureDescription || !featureDescription.trim()) {
+      setGenError('Please describe or select the AI feature you want to build.');
       return;
     }
 
@@ -341,7 +341,8 @@ export default function OnboardingPage() {
         body: JSON.stringify({
           organization_id: activeOrgId,
           repo_id: targetRepoId,
-          feature_description: featureDesc.trim(),
+          feature_description: featureDescription.trim(),
+          model: model,
         }),
       });
 
@@ -623,53 +624,15 @@ export default function OnboardingPage() {
                 </div>
               )}
 
-              {/* Error Message */}
-              {genError && (
-                <div className="p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-rose-400 text-xs font-semibold flex items-start gap-2.5">
-                  <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5 text-rose-400" />
-                  <div>
-                    <p className="font-bold">Generation Error</p>
-                    <p className="text-[11px] font-mono mt-0.5">{genError}</p>
-                  </div>
-                </div>
-              )}
+              <div className="space-y-4">
+                <FeatureCatalog
+                  repoName={connectedRepo?.name}
+                  onGenerate={handleGenerateFeature}
+                  loading={genLoading}
+                  error={genError}
+                />
 
-              {(() => {
-                const suggestionsData = getFeatureSuggestions(connectedRepo?.name);
-                return (
-                  <form onSubmit={handleGenerateFeature} className="space-y-4">
-                    <div className="space-y-1.5">
-                      <label className="block text-xs font-bold text-slate-300">
-                        Feature Description <span className="text-rose-400">*</span>
-                      </label>
-                      <textarea
-                        rows={4}
-                        required
-                        value={featureDesc}
-                        onChange={(e) => setFeatureDesc(e.target.value)}
-                        placeholder={suggestionsData.placeholder}
-                        className="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 font-sans resize-none"
-                      />
-                    </div>
-
-                    {/* Preset Suggestions */}
-                    <div className="space-y-1.5">
-                      <p className="text-[11px] font-semibold text-slate-400">Or pick a common AI feature pattern:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {suggestionsData.suggestions.map((suggestion) => (
-                          <button
-                            key={suggestion}
-                            type="button"
-                            onClick={() => setFeatureDesc(suggestion)}
-                            className="text-xs bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 rounded-xl px-3 py-1.5 transition-colors cursor-pointer"
-                          >
-                            + {suggestion}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                <div className="pt-4 flex items-center justify-between">
+                <div className="pt-4 flex items-center justify-between border-t border-slate-800">
                   <button
                     type="button"
                     onClick={() => {
@@ -679,30 +642,9 @@ export default function OnboardingPage() {
                   >
                     I'll do this later (Skip to Dashboard &rarr;)
                   </button>
-
-                  <button
-                    type="submit"
-                    disabled={genLoading}
-                    className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-xs px-6 py-3 rounded-xl flex items-center gap-2 transition-all shadow-lg cursor-pointer"
-                  >
-                    {genLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-white" />
-                        <span>Generating AI Code & PR...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-4 h-4 text-amber-300" />
-                        <span>Generate AI Feature PR</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
                 </div>
-              </form>
-            );
-          })()}
-        </div>
+              </div>
+            </div>
           )}
 
           {/* STEP 3: Confirmation */}

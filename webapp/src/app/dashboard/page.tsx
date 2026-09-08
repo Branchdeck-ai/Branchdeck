@@ -137,8 +137,11 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   },
 };
 
+import { Sparkles } from 'lucide-react';
+
 const NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'store', label: 'Feature Catalog', icon: Sparkles },
   { id: 'integrations', label: 'Integrations', icon: Cpu },
   { id: 'usage', label: 'Usage & Cost', icon: BarChart3 },
   { id: 'repos', label: 'Repos', icon: GitBranch },
@@ -985,7 +988,11 @@ export default function ClientDashboard() {
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveNav(item.id);
+                  if (item.id === 'store') {
+                    window.location.href = '/dashboard/store';
+                  } else {
+                    setActiveNav(item.id);
+                  }
                   setMobileSidebarOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all ${
