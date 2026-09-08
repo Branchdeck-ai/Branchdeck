@@ -831,19 +831,14 @@ export default function ClientDashboard() {
           return exists ? prev : (d.organizations[0].id || d.organizations[0].organization_id);
         });
       } else {
-        setOrgs([
-          { id: 'org-demo-acme', role: 'Owner' },
-          { id: 'org_demo_123', role: 'Owner' }
-        ]);
-        setActiveOrg('org-demo-acme');
+        // Authenticated user with no orgs yet: clear orgs so backend get_current_user provisions self-serve org
+        setOrgs([]);
+        setActiveOrg(null);
       }
     }).catch((err) => {
       console.error('[Branchdeck Dashboard] Error fetching user organizations:', err);
-      setOrgs([
-        { id: 'org-demo-acme', role: 'Owner' },
-        { id: 'org_demo_123', role: 'Owner' }
-      ]);
-      setActiveOrg('org-demo-acme');
+      setOrgs([]);
+      setActiveOrg(null);
     });
   }, [authedFetch, session]);
 
