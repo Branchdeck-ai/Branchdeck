@@ -68,13 +68,19 @@ function NotFoundView() {
         <p className="text-xs text-slate-500 leading-relaxed">
           The page you are looking for does not exist or has been moved.
         </p>
-        <div className="pt-2">
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
           <a
-            href="/"
-            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-xs"
+            href="/dashboard"
+            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-xs w-full sm:w-auto justify-center"
           >
-            <span>Return to Branchdeck Home</span>
+            <span>Go to Dashboard</span>
             <ArrowRight className="w-3.5 h-3.5" />
+          </a>
+          <a
+            href="/?skip_redirect=true"
+            className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-xs w-full sm:w-auto justify-center border border-slate-200"
+          >
+            <span>Main Website</span>
           </a>
         </div>
       </div>

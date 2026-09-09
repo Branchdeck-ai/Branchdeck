@@ -105,13 +105,8 @@ export default function Dashboard() {
           console.log('[Branchdeck Auth] Redirecting to /onboarding...');
           window.location.href = '/onboarding';
         } else if (!skipRedirect) {
-          if (isAdminUser(sess.user?.email)) {
-            console.log('[Branchdeck Auth] Admin signed in. Redirecting to /admin...');
-            window.location.href = '/admin';
-          } else {
-            console.log('[Branchdeck Auth] User onboarded. Navigating directly to /dashboard...');
-            window.location.href = '/dashboard';
-          }
+          console.log('[Branchdeck Auth] User onboarded. Navigating to /dashboard...');
+          window.location.href = '/dashboard';
         }
       }
     };
