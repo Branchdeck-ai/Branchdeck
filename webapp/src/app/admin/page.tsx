@@ -54,7 +54,11 @@ interface AdminOrg {
   total_calls: number;
 }
 
-function NotFoundView() {
+import AuthModal from '@/components/AuthModal';
+
+function NotFoundView({ onRetry }: { onRetry?: () => void }) {
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col items-center justify-center p-6 font-sans">
       <div className="max-w-md w-full bg-white border border-slate-200 rounded-3xl p-8 text-center space-y-4 shadow-sm">
@@ -66,24 +70,36 @@ function NotFoundView() {
           <p className="text-sm font-bold text-slate-700">Page Not Found</p>
         </div>
         <p className="text-xs text-slate-500 leading-relaxed">
-          The page you are looking for does not exist or has been moved.
+          The page you are looking for does not exist or requires authorized admin credentials.
         </p>
         <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            onClick={() => setAuthModalOpen(true)}
+            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-xs w-full sm:w-auto justify-center cursor-pointer"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+            <span>Admin Sign In</span>
+          </button>
           <a
             href="/dashboard"
-            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-xs w-full sm:w-auto justify-center"
+            className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-xs w-full sm:w-auto justify-center border border-slate-200"
           >
             <span>Go to Dashboard</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </a>
-          <a
-            href="/?skip_redirect=true"
-            className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-xs w-full sm:w-auto justify-center border border-slate-200"
-          >
-            <span>Main Website</span>
-          </a>
         </div>
       </div>
+
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccess={() => {
+          setAuthModalOpen(false);
+          if (onRetry) onRetry();
+          else window.location.reload();
+        }}
+        initialMode="signin"
+      />
     </div>
   );
 }
@@ -131,6 +147,7 @@ export default function AdminDashboardPage() {
       });
 
       if (!res.ok) {
+        console.error('[Admin Panel] Backend overview returned status:', res.status);
         setAuthorized(false);
         setLoading(false);
         setRefreshing(false);
@@ -145,6 +162,7 @@ export default function AdminDashboardPage() {
         setAuthorized(false);
       }
     } catch (err) {
+      console.error('[Admin Panel] Network error fetching admin data:', err);
       setAuthorized(false);
     } finally {
       setLoading(false);
@@ -159,10 +177,36 @@ export default function AdminDashboardPage() {
       return;
     }
 
+    let isMounted = true;
+
+    // Check initial session
     supabase.auth.getSession().then(({ data: { session: s } }) => {
+      if (!isMounted) return;
       setSession(s);
-      fetchAdminData(s);
+      if (s) {
+        fetchAdminData(s);
+      } else {
+        setAuthorized(false);
+        setLoading(false);
+      }
     });
+
+    // Subscribe to auth state changes for automatic session hydration
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (!isMounted) return;
+      setSession(s);
+      if (s) {
+        fetchAdminData(s);
+      } else {
+        setAuthorized(false);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleUpdateBudget = async (e: React.FormEvent) => {
@@ -220,7 +264,7 @@ export default function AdminDashboardPage() {
   }
 
   if (authorized === false) {
-    return <NotFoundView />;
+    return <NotFoundView onRetry={() => { setLoading(true); if (session) fetchAdminData(session); else window.location.reload(); }} />;
   }
 
   const filteredOrgs = orgs.filter(
