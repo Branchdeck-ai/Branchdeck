@@ -47,7 +47,7 @@ export default function DashboardStorePage() {
         setSession(currentSession);
 
         if (!currentSession) {
-          window.location.href = '/login';
+          window.location.href = '/';
           return;
         }
 

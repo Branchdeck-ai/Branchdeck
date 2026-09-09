@@ -791,10 +791,16 @@ export default function ClientDashboard() {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setAuthLoading(false);
+      if (!s && typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setAuthLoading(false);
+      if (!s && typeof window !== 'undefined') {
+        window.location.href = '/';
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -824,7 +830,7 @@ export default function ClientDashboard() {
     if (typeof window !== 'undefined') {
       localStorage.clear();
       sessionStorage.clear();
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   };
 

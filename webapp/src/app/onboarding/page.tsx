@@ -57,6 +57,9 @@ export default function OnboardingPage() {
 
     async function initializeOnboarding(currentSession: any) {
       if (!currentSession) {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/';
+        }
         if (isMounted) setInitLoading(false);
         return;
       }
