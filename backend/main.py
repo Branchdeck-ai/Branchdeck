@@ -9,7 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi import FastAPI, Depends, HTTPException, Header, Request, BackgroundTasks, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from database import get_db, init_db, Repository, Commit, CodeNode, CodeEdge, FileCache, get_downstream_impact, IndexingJob, UsageLog, SecurityNodeTag, SecurityFinding, Integration, CostLog, OrgMembership, OrgSettings
+from database import get_db, init_db, Repository, Commit, CodeNode, CodeEdge, FileCache, get_downstream_impact, IndexingJob, UsageLog, SecurityNodeTag, SecurityFinding, Integration, CostLog, OrgMembership, OrgSettings, User
 from parser import parse_file
 from secure_file_handler import validate_repository_path, check_file_permission
 from services.chunker import chunk_code
@@ -2383,6 +2383,142 @@ export async function POST(req: Request) {{
             "ast_match_score": new_integ.ast_match_score,
             "created_at": new_integ.created_at.isoformat()
         }
+    }
+
+
+# ---------------------------------------------------------------------------
+# Internal Admin Portal API Endpoints (Strict Email Allowlist Guard)
+# ---------------------------------------------------------------------------
+ADMIN_ALLOWLIST = {"adelmuhammed786@gmail.com"}
+
+def verify_admin_access(current_user: AuthenticatedUser):
+    user_email = (current_user.email or "").strip().lower()
+    if not user_email or user_email not in ADMIN_ALLOWLIST:
+        raise HTTPException(status_code=404, detail="Not Found")
+
+class AdminBudgetPayload(BaseModel):
+    organization_id: str
+    monthly_budget_usd: float
+
+@app.get("/api/admin/overview")
+async def get_admin_overview(
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
+    verify_admin_access(current_user)
+
+    memberships = db.query(OrgMembership).all()
+    orgs_map = {}
+
+    for m in memberships:
+        org_id = m.organization_id
+        if org_id not in orgs_map:
+            orgs_map[org_id] = {
+                "id": org_id,
+                "owner_user_id": m.user_id,
+                "owner_email": "",
+                "role": m.role,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+                "monthly_budget_usd": 10.0,
+                "repos": [],
+                "integrations": [],
+                "total_spend_usd": 0.0,
+                "total_calls": 0
+            }
+
+    all_settings = db.query(OrgSettings).all()
+    for s in all_settings:
+        if s.organization_id in orgs_map:
+            orgs_map[s.organization_id]["monthly_budget_usd"] = float(s.monthly_budget_usd)
+        else:
+            orgs_map[s.organization_id] = {
+                "id": s.organization_id,
+                "owner_user_id": "system",
+                "owner_email": "system@branchdeck.com",
+                "role": "owner",
+                "created_at": s.created_at.isoformat() if hasattr(s, 'created_at') and s.created_at else None,
+                "monthly_budget_usd": float(s.monthly_budget_usd),
+                "repos": [],
+                "integrations": [],
+                "total_spend_usd": 0.0,
+                "total_calls": 0
+            }
+
+    all_users = db.query(User).all()
+    user_email_map = {u.id: u.email for u in all_users if u.email}
+    for m in memberships:
+        if m.organization_id in orgs_map:
+            if m.user_id in user_email_map:
+                orgs_map[m.organization_id]["owner_email"] = user_email_map[m.user_id]
+            elif not orgs_map[m.organization_id]["owner_email"]:
+                orgs_map[m.organization_id]["owner_email"] = current_user.email if m.user_id == current_user.user_id else f"{m.user_id}@client.branchdeck.com"
+
+    all_repos = db.query(Repository).all()
+    for r in all_repos:
+        if r.organization_id in orgs_map:
+            method = "GitHub App" if r.github_installation_id else ("PAT (Encrypted)" if r.github_pat_encrypted else "Direct Connection")
+            orgs_map[r.organization_id]["repos"].append({
+                "id": r.id,
+                "name": r.name,
+                "github_url": r.github_url or "",
+                "connection_method": method,
+                "connected_at": r.created_at.isoformat() if r.created_at else None
+            })
+
+    all_integs = db.query(Integration).all()
+    for i in all_integs:
+        if i.organization_id in orgs_map:
+            orgs_map[i.organization_id]["integrations"].append({
+                "id": i.id,
+                "name": i.name,
+                "type": i.type,
+                "model": getattr(i, 'model', None) or "gemini-2.5-flash",
+                "status": i.status,
+                "pr_url": i.pr_url,
+                "ast_match_score": getattr(i, 'ast_match_score', 0.965)
+            })
+
+    from sqlalchemy import func
+    all_costs = db.query(
+        CostLog.integration_id,
+        func.sum(CostLog.cost_usd).label("total_cost"),
+        func.count(CostLog.id).label("total_calls")
+    ).group_by(CostLog.integration_id).all()
+
+    cost_by_integ = {row.integration_id: (float(row.total_cost or 0), int(row.total_calls or 0)) for row in all_costs}
+
+    for i in all_integs:
+        if i.organization_id in orgs_map and i.id in cost_by_integ:
+            c, calls = cost_by_integ[i.id]
+            orgs_map[i.organization_id]["total_spend_usd"] += c
+            orgs_map[i.organization_id]["total_calls"] += calls
+
+    return {
+        "success": True,
+        "organizations": list(orgs_map.values())
+    }
+
+@app.post("/api/admin/budget")
+async def update_org_budget(
+    payload: AdminBudgetPayload,
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
+    verify_admin_access(current_user)
+
+    settings = db.query(OrgSettings).filter_by(organization_id=payload.organization_id).first()
+    if not settings:
+        settings = OrgSettings(organization_id=payload.organization_id, monthly_budget_usd=payload.monthly_budget_usd)
+        db.add(settings)
+    else:
+        settings.monthly_budget_usd = payload.monthly_budget_usd
+    
+    db.commit()
+    logger.info(f"[Admin] Updated monthly_budget_usd for org '{payload.organization_id}' to ${payload.monthly_budget_usd} by admin {current_user.email}")
+    return {
+        "success": True,
+        "organization_id": payload.organization_id,
+        "monthly_budget_usd": payload.monthly_budget_usd
     }
 
 

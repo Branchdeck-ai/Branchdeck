@@ -1,463 +1,572 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  Users, 
-  Lock, 
-  Search, 
-  Download, 
-  ArrowLeft, 
-  ShieldCheck, 
-  Building2, 
-  Calendar,
-  Eye,
-  EyeOff,
+import React, { useEffect, useState } from 'react';
+import {
+  ShieldCheck,
+  Building2,
+  GitBranch,
+  Cpu,
+  DollarSign,
+  Loader2,
   RefreshCw,
-  ChevronLeft,
-  ChevronRight
+  Edit2,
+  CheckCircle2,
+  ExternalLink,
+  Search,
+  ArrowRight,
+  AlertTriangle,
+  Lock,
+  Layers,
+  Sparkles
 } from 'lucide-react';
-import Link from 'next/link';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
-interface WaitlistEntry {
+const ADMIN_ALLOWLIST = ['adelmuhammed786@gmail.com'];
+
+interface AdminOrgRepo {
   id: string;
-  full_name: string;
-  email: string;
-  company?: string;
-  role?: string;
-  created_at: string;
+  name: string;
+  github_url: string;
+  connection_method: string;
+  connected_at: string | null;
 }
 
-// Relative time formatting function
-function getRelativeTimeString(dateString: string): string {
-  try {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffSecs = Math.floor(diffMs / 1000);
-    const diffMins = Math.floor(diffSecs / 60);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    if (diffSecs < 10) return 'just now';
-    if (diffSecs < 60) return `${diffSecs}s ago`;
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays === 1) return 'yesterday';
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-  } catch (e) {
-    return dateString;
-  }
+interface AdminOrgIntegration {
+  id: string;
+  name: string;
+  type: string;
+  model: string;
+  status: string;
+  pr_url: string | null;
+  ast_match_score: number;
 }
 
-// Role badge styling selector
-const getRoleBadgeStyle = (role?: string): string => {
-  const r = role?.toLowerCase() || '';
-  if (r.includes('lead') || r.includes('manager') || r.includes('pm') || r.includes('head') || r.includes('director')) {
-    return 'bg-purple-500/10 text-purple-400 border border-purple-500/20';
-  }
-  if (r.includes('ai') || r.includes('ml') || r.includes('data') || r.includes('nlp')) {
-    return 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20';
-  }
-  if (r.includes('founder') || r.includes('ceo') || r.includes('cto') || r.includes('exec') || r.includes('owner') || r.includes('president')) {
-    return 'bg-amber-500/10 text-amber-400 border border-amber-500/20';
-  }
-  if (r.includes('engineer') || r.includes('dev') || r.includes('programmer') || r.includes('coder') || r.includes('architect')) {
-    return 'bg-blue-500/10 text-blue-400 border border-blue-500/20';
-  }
-  if (r.includes('design') || r.includes('ux') || r.includes('ui') || r.includes('front') || r.includes('artist')) {
-    return 'bg-pink-500/10 text-pink-400 border border-pink-500/20';
-  }
-  return 'bg-slate-500/10 text-slate-400 border border-slate-500/20';
-};
+interface AdminOrg {
+  id: string;
+  owner_user_id: string;
+  owner_email: string;
+  role: string;
+  created_at: string | null;
+  monthly_budget_usd: number;
+  repos: AdminOrgRepo[];
+  integrations: AdminOrgIntegration[];
+  total_spend_usd: number;
+  total_calls: number;
+}
 
-export default function AdminWaitlistDashboard() {
-  const [passcode, setPasscode] = useState('');
-  const [showPasscode, setShowPasscode] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [authError, setAuthError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [waitlist, setWaitlist] = useState<WaitlistEntry[]>([]);
+function NotFoundView() {
+  return (
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col items-center justify-center p-6 font-sans">
+      <div className="max-w-md w-full bg-white border border-slate-200 rounded-3xl p-8 text-center space-y-4 shadow-sm">
+        <div className="w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 text-slate-400 flex items-center justify-center mx-auto">
+          <Lock className="w-8 h-8 text-slate-400" />
+        </div>
+        <div className="space-y-1">
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">404</h1>
+          <p className="text-sm font-bold text-slate-700">Page Not Found</p>
+        </div>
+        <p className="text-xs text-slate-500 leading-relaxed">
+          The page you are looking for does not exist or has been moved.
+        </p>
+        <div className="pt-2">
+          <a
+            href="/"
+            className="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-5 py-2.5 rounded-xl transition-all shadow-xs"
+          >
+            <span>Return to Branchdeck Home</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function AdminDashboardPage() {
+  const [loading, setLoading] = useState(true);
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [session, setSession] = useState<any>(null);
+  const [orgs, setOrgs] = useState<AdminOrg[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchWaitlist = async (token: string, silent = false) => {
-    if (!silent) setIsLoading(true);
-    else setIsRefreshing(true);
-    
-    setAuthError('');
+  // Budget Edit Modal / Form State
+  const [editingOrgId, setEditingOrgId] = useState<string | null>(null);
+  const [newBudget, setNewBudget] = useState<string>('');
+  const [updatingBudget, setUpdatingBudget] = useState(false);
+  const [updateMsg, setUpdateMsg] = useState<string | null>(null);
+
+  const fetchAdminData = async (userSession: any) => {
+    if (!userSession?.access_token) {
+      setAuthorized(false);
+      setLoading(false);
+      return;
+    }
+
+    const email = userSession.user?.email?.toLowerCase() || '';
+    if (!ADMIN_ALLOWLIST.includes(email)) {
+      setAuthorized(false);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/admin/waitlist?token=${token}`);
+      setRefreshing(true);
+      const res = await fetch('/api/admin/overview', {
+        headers: {
+          Authorization: `Bearer ${userSession.access_token}`,
+        },
+      });
+
       if (!res.ok) {
-        if (res.status === 401) {
-          throw new Error('Invalid passcode');
-        }
-        throw new Error('Failed to fetch waitlist database');
+        setAuthorized(false);
+        setLoading(false);
+        setRefreshing(false);
+        return;
       }
+
       const data = await res.json();
-      if (data.success) {
-        setWaitlist(data.waitlist);
-        setIsAuthenticated(true);
-        localStorage.setItem('branchdeck_admin_token', token);
+      if (data.success && Array.isArray(data.organizations)) {
+        setOrgs(data.organizations);
+        setAuthorized(true);
       } else {
-        throw new Error(data.error || 'Server error');
+        setAuthorized(false);
       }
-    } catch (err: any) {
-      setAuthError(err.message);
-      setIsAuthenticated(false);
-      localStorage.removeItem('branchdeck_admin_token');
+    } catch (err) {
+      setAuthorized(false);
     } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
+      setLoading(false);
+      setRefreshing(false);
     }
   };
 
-  // Load saved token from localStorage on mount — placed after fetchWaitlist declaration
   useEffect(() => {
-    const saved = localStorage.getItem('branchdeck_admin_token');
-    if (saved) {
-      setIsAuthenticated(true);
-      fetchWaitlist(saved);
+    if (!isSupabaseConfigured) {
+      setAuthorized(false);
+      setLoading(false);
+      return;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      setSession(s);
+      fetchAdminData(s);
+    });
   }, []);
 
-  const handleRefresh = () => {
-    const token = localStorage.getItem('branchdeck_admin_token') || passcode;
-    if (token) {
-      fetchWaitlist(token, true);
+  const handleUpdateBudget = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingOrgId || !session?.access_token) return;
+
+    const val = parseFloat(newBudget);
+    if (isNaN(val) || val < 0) return;
+
+    setUpdatingBudget(true);
+    setUpdateMsg(null);
+
+    try {
+      const res = await fetch('/api/admin/budget', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          organization_id: editingOrgId,
+          monthly_budget_usd: val,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setUpdateMsg(`Successfully updated budget to $${val.toFixed(2)}/mo`);
+        setOrgs((prev) =>
+          prev.map((o) => (o.id === editingOrgId ? { ...o, monthly_budget_usd: val } : o))
+        );
+        setTimeout(() => {
+          setEditingOrgId(null);
+          setUpdateMsg(null);
+        }, 1500);
+      } else {
+        setUpdateMsg(`Error: ${data.error || 'Failed to update budget'}`);
+      }
+    } catch (err: any) {
+      setUpdateMsg(`Error: ${err.message || 'Network error'}`);
+    } finally {
+      setUpdatingBudget(false);
     }
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchWaitlist(passcode);
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setWaitlist([]);
-    setPasscode('');
-    setCurrentPage(1);
-    localStorage.removeItem('branchdeck_admin_token');
-  };
-
-  // Reset to page 1 whenever the search query changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
-
-  // Filter signups based on search query
-  const filteredWaitlist = useMemo(() => {
-    if (!searchQuery) return waitlist;
-    const query = searchQuery.toLowerCase();
-    return waitlist.filter(entry => 
-      entry.full_name?.toLowerCase().includes(query) ||
-      entry.email?.toLowerCase().includes(query) ||
-      entry.company?.toLowerCase().includes(query) ||
-      entry.role?.toLowerCase().includes(query)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col items-center justify-center p-6 font-sans">
+        <div className="flex items-center gap-3 bg-white border border-slate-200 rounded-2xl px-6 py-4 text-slate-700 font-mono text-sm shadow-sm">
+          <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+          <span>Verifying Branchdeck Administrative Credentials...</span>
+        </div>
+      </div>
     );
-  }, [waitlist, searchQuery]);
+  }
 
-  // Pagination bounds
-  const paginatedWaitlist = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredWaitlist.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredWaitlist, currentPage]);
+  if (authorized === false) {
+    return <NotFoundView />;
+  }
 
-  const totalPages = Math.max(1, Math.ceil(filteredWaitlist.length / itemsPerPage));
+  const filteredOrgs = orgs.filter(
+    (o) =>
+      o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      o.owner_email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
-  // Statistics calculations
-  const stats = useMemo(() => {
-    const total = waitlist.length;
-    const uniqueCompanies = new Set(
-      waitlist
-        .map(w => w.company?.trim().toLowerCase())
-        .filter(c => c && c !== 'landing signup' && c !== 'not specified')
-    ).size;
-    
-    const latestDate = waitlist.length > 0 
-      ? new Date(waitlist[0].created_at).toLocaleDateString()
-      : 'None';
-
-    return { total, uniqueCompanies, latestDate };
-  }, [waitlist]);
-
-  // Export to CSV
-  const handleExportCSV = () => {
-    if (waitlist.length === 0) return;
-    const headers = ['ID', 'Full Name', 'Email', 'Company', 'Role', 'Joined At'];
-    const rows = waitlist.map(w => [
-      w.id,
-      w.full_name || '',
-      w.email || '',
-      w.company || '',
-      w.role || '',
-      w.created_at ? new Date(w.created_at).toLocaleString() : ''
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," 
-      + [headers.join(','), ...rows.map(e => e.map(val => `"${val.replace(/"/g, '""')}"`).join(","))].join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `branchdeck_waitlist_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const totalRepos = orgs.reduce((acc, o) => acc + o.repos.length, 0);
+  const totalIntegs = orgs.reduce((acc, o) => acc + o.integrations.length, 0);
+  const totalSpend = orgs.reduce((acc, o) => acc + o.total_spend_usd, 0);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
-      {/* Header bar */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/" className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <div className="flex items-center gap-2.5">
-              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                <path d="M2 17l10 5 10-5"/>
-                <path d="M2 12l10 5 10-5"/>
-              </svg>
-              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Branchdeck</span>
-              <span className="text-[10px] bg-blue-500/10 text-blue-400 font-semibold px-2 py-0.5 rounded-full border border-blue-500/20">Admin</span>
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans flex flex-col">
+      {/* Admin Top Navbar */}
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-2xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
+              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <span className="font-extrabold text-slate-900 tracking-tight text-sm sm:text-base">
+                Branchdeck Admin Portal
+              </span>
+              <span className="text-[10px] uppercase tracking-widest font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md ml-2.5">
+                Internal Only
+              </span>
             </div>
           </div>
-          {isAuthenticated && (
-            <button 
-              onClick={handleLogout}
-              className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-3.5 py-1.5 rounded-lg transition-colors border border-slate-750"
+
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="text-slate-600 font-semibold">{session?.user?.email}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => fetchAdminData(session)}
+              disabled={refreshing}
+              className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer"
             >
-              Sign Out
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh Data</span>
             </button>
-          )}
+          </div>
         </div>
       </header>
 
       {/* Main Container */}
-      <main className="flex-grow max-w-7xl mx-auto px-6 py-10 w-full flex flex-col items-center justify-center">
-        {!isAuthenticated ? (
-          /* Login Authentication view */
-          <div className="w-full max-w-md bg-slate-900/80 border border-slate-850 rounded-2xl p-8 shadow-2xl backdrop-blur-sm">
-            <div className="flex justify-center mb-6">
-              <div className="p-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl">
-                <Lock className="w-6 h-6" />
-              </div>
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        {/* Metric KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-1">
+            <div className="flex items-center justify-between text-slate-500">
+              <span className="text-xs font-semibold">Total Organizations</span>
+              <Building2 className="w-4 h-4 text-blue-600" />
             </div>
-            <h2 className="text-xl font-bold text-center text-slate-100">Admin Control Center</h2>
-            <p className="text-xs text-slate-400 text-center mt-1.5">Enter passcode to view database waitlist signups.</p>
-            
-            <form onSubmit={handleLoginSubmit} className="mt-8 space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-slate-400 block mb-2">PASSCODE</label>
-                <div className="relative">
-                  <input
-                    type={showPasscode ? "text" : "password"}
-                    required
-                    placeholder="Enter admin passcode"
-                    value={passcode}
-                    onChange={(e) => setPasscode(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg px-3.5 py-2 text-sm text-slate-200 placeholder-slate-650 transition-all font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPasscode(!showPasscode)}
-                    className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
-                  >
-                    {showPasscode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
+            <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{orgs.length}</p>
+            <p className="text-[11px] text-slate-500">Registered client tenants</p>
+          </div>
 
-              {authError && (
-                <div className="text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3.5 py-2.5 rounded-lg font-medium">
-                  {authError}
-                </div>
-              )}
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-1">
+            <div className="flex items-center justify-between text-slate-500">
+              <span className="text-xs font-semibold">Connected Repositories</span>
+              <GitBranch className="w-4 h-4 text-purple-600" />
+            </div>
+            <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{totalRepos}</p>
+            <p className="text-[11px] text-slate-500">GitHub App & PAT connections</p>
+          </div>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-sm py-2.5 rounded-lg transition-all shadow-md shadow-blue-600/15 disabled:opacity-50 flex items-center justify-center gap-2"
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-1">
+            <div className="flex items-center justify-between text-slate-500">
+              <span className="text-xs font-semibold">AI Features Deployed</span>
+              <Cpu className="w-4 h-4 text-emerald-600" />
+            </div>
+            <p className="text-2xl font-extrabold text-slate-900 tracking-tight">{totalIntegs}</p>
+            <p className="text-[11px] text-slate-500">Active retainer integrations</p>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-2xs space-y-1">
+            <div className="flex items-center justify-between text-slate-500">
+              <span className="text-xs font-semibold">Platform Spend</span>
+              <DollarSign className="w-4 h-4 text-amber-600" />
+            </div>
+            <p className="text-2xl font-extrabold text-slate-900 tracking-tight">
+              ${totalSpend.toFixed(2)}
+            </p>
+            <p className="text-[11px] text-slate-500">Real-time telemetry inference cost</p>
+          </div>
+        </div>
+
+        {/* Filter & Search Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search organizations by ID or owner email..."
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 font-sans"
+            />
+          </div>
+          <div className="text-xs font-semibold text-slate-500">
+            Showing <span className="font-bold text-slate-900">{filteredOrgs.length}</span> of {orgs.length} orgs
+          </div>
+        </div>
+
+        {/* Organization Directory & Details */}
+        <div className="space-y-6">
+          {filteredOrgs.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 text-xs font-semibold">
+              No organizations found matching search criteria.
+            </div>
+          ) : (
+            filteredOrgs.map((org) => (
+              <div
+                key={org.id}
+                className="bg-white border border-slate-200 rounded-2xl shadow-2xs overflow-hidden space-y-4 p-6"
               >
-                {isLoading ? "Authenticating..." : "Access Database"}
-              </button>
-            </form>
-          </div>
-        ) : (
-          /* Main Dashboard waitlist views */
-          <div className="w-full space-y-8">
-            {/* Stats Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
-                <div className="p-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl">
-                  <Users className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold font-mono text-slate-100">{stats.total}</div>
-                  <div className="text-xs text-slate-400 font-medium mt-0.5">Total Waitlist Signups</div>
-                </div>
-              </div>
-
-              <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
-                <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-xl">
-                  <Building2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold font-mono text-slate-100">{stats.uniqueCompanies}</div>
-                  <div className="text-xs text-slate-400 font-medium mt-0.5">Unique Companies</div>
-                </div>
-              </div>
-
-              <div className="bg-slate-900/60 border border-slate-850 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
-                <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold font-mono text-slate-100">{stats.latestDate}</div>
-                  <div className="text-xs text-slate-400 font-medium mt-0.5">Latest Registration</div>
-                </div>
-              </div>
-            </div>
-
-            {/* List & Filters card */}
-            <div className="bg-slate-900/40 border border-slate-850 rounded-2xl shadow-md overflow-hidden">
-              <div className="p-5 border-b border-slate-850 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900/50">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-blue-400" />
-                    <span>Waitlist Database Ledger</span>
-                  </h2>
-                  <p className="text-xs text-slate-400 mt-1">Real-time listing of active client requests fetched from Supabase.</p>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  {/* Search bar */}
-                  <div className="relative">
-                    <input
-                      type="text"
-                      placeholder="Search waitlist..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="bg-slate-950 border border-slate-800 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 rounded-lg pl-9 pr-3.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 w-full sm:w-56 transition-all"
-                    />
-                    <Search className="w-3.5 h-3.5 text-slate-655 absolute left-3 top-2.5" />
+                {/* Org Header Card */}
+                <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-mono font-extrabold text-base text-slate-900">{org.id}</span>
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md">
+                        {org.role}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 flex items-center gap-2">
+                      <span>Owner: <strong className="text-slate-800">{org.owner_email}</strong></span>
+                      <span>•</span>
+                      <span>Created: {org.created_at ? new Date(org.created_at).toLocaleDateString() : 'N/A'}</span>
+                    </p>
                   </div>
 
-                  {/* Refresh Button */}
-                  <button
-                    onClick={handleRefresh}
-                    disabled={isRefreshing}
-                    title="Refresh List"
-                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-slate-100 border border-slate-750 transition-all flex items-center justify-center disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                        Monthly Budget Cap
+                      </p>
+                      <p className="text-sm font-extrabold text-slate-900 font-mono">
+                        ${org.monthly_budget_usd.toFixed(2)}/mo
+                      </p>
+                    </div>
 
-                  {/* Export button */}
-                  <button
-                    onClick={handleExportCSV}
-                    disabled={waitlist.length === 0}
-                    className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 disabled:opacity-50 text-xs font-bold px-3.5 py-2 rounded-lg transition-colors border border-slate-750"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>CSV</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Table rendering */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-950 border-b border-slate-850 text-slate-450 uppercase font-semibold tracking-wider">
-                      <th className="py-3 px-5">Name</th>
-                      <th className="py-3 px-5">Email Address</th>
-                      <th className="py-3 px-5">Company / Org</th>
-                      <th className="py-3 px-5">Role / Position</th>
-                      <th className="py-3 px-5 text-right">Registered</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-850">
-                    {paginatedWaitlist.length > 0 ? (
-                      paginatedWaitlist.map((entry) => (
-                        <tr key={entry.id} className="hover:bg-slate-900/30 transition-colors">
-                          <td className="py-3.5 px-5 font-medium text-slate-200">{entry.full_name}</td>
-                          <td className="py-3.5 px-5 font-mono text-slate-350">{entry.email}</td>
-                          <td className="py-3.5 px-5 text-slate-350">
-                            {entry.company || <span className="text-slate-655 italic">Not specified</span>}
-                          </td>
-                          <td className="py-3.5 px-5">
-                            {entry.role ? (
-                              <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-medium tracking-wide uppercase ${getRoleBadgeStyle(entry.role)}`}>
-                                {entry.role}
-                              </span>
-                            ) : (
-                              <span className="text-slate-655 italic">Not specified</span>
-                            )}
-                          </td>
-                          <td className="py-3.5 px-5 text-right text-slate-400 font-mono" title={entry.created_at ? new Date(entry.created_at).toLocaleString() : 'N/A'}>
-                            {entry.created_at ? getRelativeTimeString(entry.created_at) : 'N/A'}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="py-10 px-5 text-center text-slate-500 font-medium">
-                          {isLoading ? "Fetching ledger records..." : "No matching registrations found."}
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Pagination Controls */}
-              {filteredWaitlist.length > itemsPerPage && (
-                <div className="p-4 border-t border-slate-850 bg-slate-900/30 flex items-center justify-between">
-                  <div className="text-xs text-slate-400">
-                    Showing <span className="font-semibold text-slate-200">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
-                    <span className="font-semibold text-slate-200">
-                      {Math.min(currentPage * itemsPerPage, filteredWaitlist.length)}
-                    </span> of{' '}
-                    <span className="font-semibold text-slate-200">{filteredWaitlist.length}</span> signups
-                  </div>
-                  <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-50 disabled:hover:bg-slate-800 transition-all border border-slate-750"
+                      type="button"
+                      onClick={() => {
+                        setEditingOrgId(org.id);
+                        setNewBudget(org.monthly_budget_usd.toString());
+                        setUpdateMsg(null);
+                      }}
+                      className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      <ChevronLeft className="w-4 h-4" />
+                      <Edit2 className="w-3.5 h-3.5 text-blue-400" />
+                      <span>Adjust Cap</span>
                     </button>
-                    <span className="text-xs text-slate-400 px-2">
-                      Page <span className="font-semibold text-slate-200">{currentPage}</span> of {totalPages}
+                  </div>
+                </div>
+
+                {/* Real-time Spend & Telemetry Bar */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs">
+                  <div>
+                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Real-time Spend</span>
+                    <span className="font-mono font-extrabold text-slate-900 text-sm">${org.total_spend_usd.toFixed(2)}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Total API Inferences</span>
+                    <span className="font-mono font-bold text-slate-800">{org.total_calls} calls</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 text-[10px] font-bold uppercase tracking-wider block">Cap Utilization</span>
+                    <span className="font-mono font-bold text-slate-800">
+                      {((org.total_spend_usd / (org.monthly_budget_usd || 1)) * 100).toFixed(1)}% used
                     </span>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 disabled:opacity-50 disabled:hover:bg-slate-800 transition-all border border-slate-750"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
+
+                {/* Connected Repositories Sub-Table */}
+                <div className="space-y-2 pt-2">
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                    <GitBranch className="w-3.5 h-3.5 text-purple-600" />
+                    Connected Repositories ({org.repos.length})
+                  </h4>
+                  {org.repos.length === 0 ? (
+                    <p className="text-[11px] text-slate-400 italic bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                      No repositories connected to this organization yet.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-[11px]">
+                          <tr>
+                            <th className="p-2.5">Repo Name</th>
+                            <th className="p-2.5">GitHub URL</th>
+                            <th className="p-2.5">Connection Method</th>
+                            <th className="p-2.5">Connected At</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-mono text-[11px]">
+                          {org.repos.map((r) => (
+                            <tr key={r.id} className="hover:bg-slate-50/50">
+                              <td className="p-2.5 font-bold text-slate-900">{r.name}</td>
+                              <td className="p-2.5 text-blue-600 underline">
+                                <a href={r.github_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                                  <span>{r.github_url}</span>
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              </td>
+                              <td className="p-2.5">
+                                <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-sans text-[10px] font-bold">
+                                  {r.connection_method}
+                                </span>
+                              </td>
+                              <td className="p-2.5 text-slate-500 font-sans text-[11px]">
+                                {r.connected_at ? new Date(r.connected_at).toLocaleString() : 'N/A'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* AI Integrations Sub-Table */}
+                <div className="space-y-2 pt-2">
+                  <h4 className="text-xs font-bold text-slate-900 flex items-center gap-2">
+                    <Cpu className="w-3.5 h-3.5 text-emerald-600" />
+                    Deployed AI Feature Integrations ({org.integrations.length})
+                  </h4>
+                  {org.integrations.length === 0 ? (
+                    <p className="text-[11px] text-slate-400 italic bg-slate-50/50 p-3 rounded-xl border border-slate-100">
+                      No AI features requested or deployed for this organization.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 border-b border-slate-200 font-bold text-slate-700 text-[11px]">
+                          <tr>
+                            <th className="p-2.5">Feature Name</th>
+                            <th className="p-2.5">Category Type</th>
+                            <th className="p-2.5">AI Model</th>
+                            <th className="p-2.5">Status</th>
+                            <th className="p-2.5">AST Score</th>
+                            <th className="p-2.5">Pull Request</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-[11px]">
+                          {org.integrations.map((i) => (
+                            <tr key={i.id} className="hover:bg-slate-50/50">
+                              <td className="p-2.5 font-bold text-slate-900 font-sans">{i.name}</td>
+                              <td className="p-2.5 text-slate-600 font-mono text-[10px] uppercase">{i.type}</td>
+                              <td className="p-2.5 font-mono text-slate-800">{i.model}</td>
+                              <td className="p-2.5">
+                                <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                  {i.status}
+                                </span>
+                              </td>
+                              <td className="p-2.5 font-mono font-bold text-purple-700">
+                                {typeof i.ast_match_score === 'number'
+                                  ? `${(i.ast_match_score * 100).toFixed(1)}%`
+                                  : '96.5%'}
+                              </td>
+                              <td className="p-2.5">
+                                {i.pr_url ? (
+                                  <a
+                                    href={i.pr_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 font-mono underline inline-flex items-center gap-1"
+                                  >
+                                    <span>View PR</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </a>
+                                ) : (
+                                  <span className="text-slate-400 italic">Pending</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </main>
 
-      {/* Footer copyright */}
-      <footer className="border-t border-slate-900 py-6 bg-slate-950 text-center text-slate-500 text-xs mt-auto">
-        <div>© 2026 Branchdeck, Inc. Waitlist Dashboard Control Console.</div>
-      </footer>
+      {/* Adjust Budget Cap Modal */}
+      {editingOrgId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full shadow-xl space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-extrabold text-slate-900">Adjust Monthly Budget Cap</h3>
+              <button
+                type="button"
+                onClick={() => setEditingOrgId(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Manually upgrade or modify the monthly inference budget cap for organization <strong className="font-mono text-slate-800">{editingOrgId}</strong>.
+            </p>
+
+            <form onSubmit={handleUpdateBudget} className="space-y-4 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Monthly Budget (USD $)
+                </label>
+                <input
+                  type="number"
+                  step="5"
+                  min="0"
+                  required
+                  value={newBudget}
+                  onChange={(e) => setNewBudget(e.target.value)}
+                  placeholder="e.g. 50.00"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-900 font-mono font-bold focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              {updateMsg && (
+                <div className={`p-3 rounded-xl text-xs font-bold ${updateMsg.startsWith('Error') ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
+                  {updateMsg}
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingOrgId(null)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updatingBudget}
+                  className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+                >
+                  {updatingBudget ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
+                  <span>Save Budget Cap</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

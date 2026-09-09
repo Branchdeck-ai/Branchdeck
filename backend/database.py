@@ -330,6 +330,34 @@ def get_db():
     finally:
         db.close()
 
+def _ensure_columns(target_engine):
+    try:
+        with target_engine.begin() as conn:
+            if target_engine.dialect.name == "sqlite":
+                cols = [r[1] for r in conn.execute(text("PRAGMA table_info(repos)")).fetchall()]
+                if "github_pat_encrypted" not in cols:
+                    conn.execute(text("ALTER TABLE repos ADD COLUMN github_pat_encrypted TEXT"))
+                if "github_url" not in cols:
+                    conn.execute(text("ALTER TABLE repos ADD COLUMN github_url VARCHAR(255)"))
+                if "github_installation_id" not in cols:
+                    conn.execute(text("ALTER TABLE repos ADD COLUMN github_installation_id VARCHAR(100)"))
+                
+                integ_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(integrations)")).fetchall()]
+                if "model" not in integ_cols:
+                    conn.execute(text("ALTER TABLE integrations ADD COLUMN model VARCHAR(50)"))
+
+                cost_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(cost_logs)")).fetchall()]
+                if "model" not in cost_cols:
+                    conn.execute(text("ALTER TABLE cost_logs ADD COLUMN model VARCHAR(50)"))
+            else:
+                conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_pat_encrypted TEXT"))
+                conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_url VARCHAR(255)"))
+                conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_installation_id VARCHAR(100)"))
+                conn.execute(text("ALTER TABLE integrations ADD COLUMN IF NOT EXISTS model VARCHAR(50)"))
+                conn.execute(text("ALTER TABLE cost_logs ADD COLUMN IF NOT EXISTS model VARCHAR(50)"))
+    except Exception as col_err:
+        logger.warning(f"Could not ensure database columns: {col_err}")
+
 # Initialize tables
 def init_db():
     global DATABASE_URL
@@ -345,33 +373,7 @@ def init_db():
             Base.metadata.create_all(bind=engine)
             logger.info("Database initialized successfully.")
 
-            # Ensure repos and integrations tables have updated columns
-            try:
-                with engine.begin() as conn:
-                    if engine.dialect.name == "sqlite":
-                        cols = [r[1] for r in conn.execute(text("PRAGMA table_info(repos)")).fetchall()]
-                        if "github_pat_encrypted" not in cols:
-                            conn.execute(text("ALTER TABLE repos ADD COLUMN github_pat_encrypted TEXT"))
-                        if "github_url" not in cols:
-                            conn.execute(text("ALTER TABLE repos ADD COLUMN github_url VARCHAR(255)"))
-                        if "github_installation_id" not in cols:
-                            conn.execute(text("ALTER TABLE repos ADD COLUMN github_installation_id VARCHAR(100)"))
-                        
-                        integ_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(integrations)")).fetchall()]
-                        if "model" not in integ_cols:
-                            conn.execute(text("ALTER TABLE integrations ADD COLUMN model VARCHAR(50)"))
-
-                        cost_cols = [r[1] for r in conn.execute(text("PRAGMA table_info(cost_logs)")).fetchall()]
-                        if "model" not in cost_cols:
-                            conn.execute(text("ALTER TABLE cost_logs ADD COLUMN model VARCHAR(50)"))
-                    else:
-                        conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_pat_encrypted TEXT"))
-                        conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_url VARCHAR(255)"))
-                        conn.execute(text("ALTER TABLE repos ADD COLUMN IF NOT EXISTS github_installation_id VARCHAR(100)"))
-                        conn.execute(text("ALTER TABLE integrations ADD COLUMN IF NOT EXISTS model VARCHAR(50)"))
-                        conn.execute(text("ALTER TABLE cost_logs ADD COLUMN IF NOT EXISTS model VARCHAR(50)"))
-            except Exception as col_err:
-                logger.warning(f"Could not ensure database columns: {col_err}")
+            _ensure_columns(engine)
             # Create pgvector IVFFlat index on code_chunks.embedding for fast ANN search
             # Runs as IF NOT EXISTS so it is safe to call on every startup
             if "postgresql" in DATABASE_URL:
@@ -401,6 +403,7 @@ def init_db():
                     logger.critical(f"Max retries reached. Falling back to SQLite: {fallback_url}")
                     setup_db(fallback_url)
                     Base.metadata.create_all(bind=engine)
+                    _ensure_columns(engine)
                     logger.info("SQLite database initialized successfully (ALLOW_SQLITE_FALLBACK=true).")
             else:
                 logger.info(f"Retrying in {backoff} seconds...")
