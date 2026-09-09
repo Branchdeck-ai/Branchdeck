@@ -72,6 +72,7 @@ class Repository(Base):
     __table_args__ = (
         Index("idx_repos_org", "organization_id"),
         Index("idx_repos_installation", "github_installation_id"),
+        UniqueConstraint("github_url", name="uq_repos_github_url"),
     )
 
 class Commit(Base):

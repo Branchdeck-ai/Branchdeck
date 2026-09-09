@@ -5,6 +5,12 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get('Authorization');
+    if (!authHeader || authHeader === 'Bearer ' || authHeader === 'Bearer undefined') {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: missing Authorization header' },
+        { status: 401 }
+      );
+    }
     let body = {};
     try {
       body = await request.json();
@@ -12,10 +18,8 @@ export async function POST(request: Request) {
 
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      Authorization: authHeader,
     };
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
-    }
 
     const res = await fetch(`${BACKEND_URL}/api/dashboard/organizations/provision`, {
       method: 'POST',

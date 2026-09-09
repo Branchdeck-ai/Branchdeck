@@ -149,14 +149,7 @@ def verify_jwt_hs256(token: str, secret: str) -> dict:
         except Exception as unverified_err:
             logger.warning(f"[Branchdeck Auth] Unverified JWT decode failed: {unverified_err}")
 
-        if not _is_production:
-            return {
-                "sub": "user-demo-001",
-                "email": "demo.client@branchdeck.com",
-                "role": "authenticated",
-                "user_metadata": {}
-            }
-        raise HTTPException(status_code=401, detail=f"Invalid token: {e}")
+        raise HTTPException(status_code=401, detail=f"Invalid or expired authorization token: {e}")
 
 
 class AuthenticatedUser:
@@ -1354,25 +1347,12 @@ def provision_self_serve_org(user_id: str, email: Optional[str], db: Session) ->
 async def provision_organization_endpoint(
     payload: ProvisionOrgPayload,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """Provision a real self-serve organization for a newly signed-up user."""
-    auth_header = request.headers.get("Authorization")
-    user_id = payload.user_id
-    email = payload.email
-
-    if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header.split(" ")[1]
-        try:
-            token_payload = verify_jwt_hs256(token, SUPABASE_JWT_SECRET)
-            if token_payload.get("sub"):
-                user_id = token_payload.get("sub")
-                email = token_payload.get("email") or email
-        except Exception:
-            pass
-
-    if not user_id:
-        raise HTTPException(status_code=400, detail="Missing user_id for organization provisioning")
+    user_id = current_user.user_id
+    email = current_user.email or payload.email
 
     result = provision_self_serve_org(user_id=user_id, email=email, db=db)
     return result
@@ -1593,17 +1573,10 @@ class ProxyAIGeneratePayload(BaseModel):
 async def proxy_ai_generate(
     payload: ProxyAIGeneratePayload,
     request: Request,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
-    """Centralized Branchdeck AI Proxy for client integrations.
-    
-    1. Authenticates & validates integration_id.
-    2. Enforces monthly budget caps from OrgSettings (provider agnostic).
-    3. Routes to requested AI model provider (Google Gemini, OpenAI, or Anthropic).
-    4. Parses provider-specific token usage metrics (prompt_tokens / input_tokens vs completion_tokens / output_tokens).
-    5. Calculates cost using config/model_pricing.py.
-    6. Records exact real-time CostLog telemetry.
-    """
+    """Centralized Branchdeck AI Proxy for client integrations."""
     import time
     import asyncio
     from datetime import datetime, timezone, timedelta
@@ -1615,6 +1588,9 @@ async def proxy_ai_generate(
     integ = db.query(Integration).filter_by(id=payload.integration_id).first()
     if not integ:
         raise HTTPException(status_code=404, detail=f"Integration '{payload.integration_id}' not found")
+
+    # Verify that caller belongs to the organization owning this integration
+    verify_org_membership(current_user.user_id, integ.organization_id, db)
 
     org_id = integ.organization_id
     model_name = payload.model or (getattr(integ, 'model', None) or "gemini-2.5-flash")
@@ -2009,17 +1985,6 @@ async def github_app_callback(
                 github_installation_id=str(installation_id)
             )
             db.add(new_repo)
-            
-            # Also create repository for org-demo-resummit if distinct
-            if org_id != "org-demo-resummit":
-                demo_repo = Repository(
-                    organization_id="org-demo-resummit",
-                    name=repo_name,
-                    github_url=html_url,
-                    github_installation_id=str(installation_id)
-                )
-                db.add(demo_repo)
-
             db.commit()
             synced_repos.append(new_repo.name)
 

@@ -5,12 +5,21 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://127.0.0.1:8000';
 
 export async function POST(req: Request) {
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader || authHeader === 'Bearer ' || authHeader === 'Bearer undefined') {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized: missing Authorization header' },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
 
     const upstreamRes = await fetch(`${BACKEND_URL}/api/proxy/ai-generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: authHeader,
       },
       body: JSON.stringify(body),
     });
