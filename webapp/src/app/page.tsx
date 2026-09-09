@@ -21,6 +21,7 @@ import MarketingLanding from '@/components/MarketingLanding';
 import AuthModal from '@/components/AuthModal';
 import RepoPickerModal from '@/components/RepoPickerModal';
 import InviteTeamModal, { useCollaboration, CollaborationBar } from '@/components/InviteTeamModal';
+import { isAdminUser } from '@/lib/admin';
 import { 
   GitBranch, 
   Search, 
@@ -75,6 +76,11 @@ export default function Dashboard() {
       setAuthLoading(false);
 
       if (sess) {
+        if (isAdminUser(sess.user?.email)) {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('branchdeck_onboarded', 'true');
+          }
+        }
         const onboarded = typeof window !== 'undefined' && localStorage.getItem('branchdeck_onboarded') === 'true';
         const skipRedirect = typeof window !== 'undefined' && window.location.search.includes('skip_redirect');
 
@@ -99,8 +105,13 @@ export default function Dashboard() {
           console.log('[Branchdeck Auth] Redirecting to /onboarding...');
           window.location.href = '/onboarding';
         } else if (!skipRedirect) {
-          console.log('[Branchdeck Auth] User onboarded. Navigating directly to /dashboard...');
-          window.location.href = '/dashboard';
+          if (isAdminUser(sess.user?.email)) {
+            console.log('[Branchdeck Auth] Admin signed in. Redirecting to /admin...');
+            window.location.href = '/admin';
+          } else {
+            console.log('[Branchdeck Auth] User onboarded. Navigating directly to /dashboard...');
+            window.location.href = '/dashboard';
+          }
         }
       }
     };

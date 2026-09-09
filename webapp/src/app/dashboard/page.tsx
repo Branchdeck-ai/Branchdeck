@@ -23,6 +23,7 @@ import {
   GitMerge,
   GitPullRequest,
   Shield,
+  ShieldCheck,
   Eye,
   EyeOff,
   UserPlus,
@@ -35,6 +36,7 @@ import {
 } from 'lucide-react';
 import ContactModal from '@/components/ContactModal';
 import FeatureCatalog from '@/components/FeatureCatalog';
+import { isAdminUser } from '@/lib/admin';
 
 function BranchdeckLogo({ className = "w-7 h-7 object-contain rounded-lg" }: { className?: string }) {
   return (
@@ -1008,7 +1010,7 @@ export default function ClientDashboard() {
   const isSpikeSafe = utilizationPct < 0.9;
 
   // ── Filtered Integrations ───────────────────────────────────────────────────
-  const filteredIntegrations = useMemo(() => {
+    const filteredIntegrations = useMemo(() => {
     if (integFilter === 'all') return integrations;
     return integrations.filter(i => i.status === integFilter);
   }, [integrations, integFilter]);
@@ -1061,6 +1063,21 @@ export default function ClientDashboard() {
 
         {/* Navigation Items */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {isAdminUser(session?.user?.email) && (
+            <a
+              href="/admin"
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold tracking-wide bg-gradient-to-r from-slate-900 to-indigo-950 text-white hover:from-slate-800 hover:to-indigo-900 transition-all shadow-sm border border-indigo-500/30 my-1"
+            >
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                <span>Admin Panel</span>
+              </div>
+              <span className="text-[10px] font-extrabold bg-indigo-500/30 text-indigo-200 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                Admin
+              </span>
+            </a>
+          )}
+
           {NAV_ITEMS.map(item => {
             const Icon = item.icon;
             const active = activeNav === item.id;
@@ -1128,9 +1145,8 @@ export default function ClientDashboard() {
       {/* ── Main Canvas ── */}
       <div className="flex-1 pl-0 lg:pl-60 transition-all min-w-0">
         {/* Topbar */}
-        <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-20 shadow-xs flex-wrap sm:flex-nowrap gap-3">
+        <header className="h-16 border-b border-slate-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-4 sm:px-8 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            {/* Hamburger button for mobile */}
             <button
               onClick={() => setMobileSidebarOpen(o => !o)}
               className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors border border-slate-200/80"

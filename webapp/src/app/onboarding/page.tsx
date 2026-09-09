@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import FeatureCatalog from '@/components/FeatureCatalog';
+import { isAdminUser } from '@/lib/admin';
 
 function BranchdeckLogo({ className = "w-7 h-7 object-contain rounded-lg" }: { className?: string }) {
   return (
@@ -339,6 +340,17 @@ export default function OnboardingPage() {
                 </span>
               </div>
             )}
+            {isAdminUser(session?.user?.email) && (
+              <button
+                type="button"
+                onClick={() => { window.location.href = '/admin'; }}
+                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Admin Panel</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => { window.location.href = '/dashboard'; }}

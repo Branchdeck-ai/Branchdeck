@@ -17,11 +17,11 @@ import {
   AlertTriangle,
   Lock,
   Layers,
-  Sparkles
+  Sparkles,
+  LayoutDashboard
 } from 'lucide-react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-
-const ADMIN_ALLOWLIST = ['adelmuhammed786@gmail.com'];
+import { ADMIN_ALLOWLIST, isAdminUser } from '@/lib/admin';
 
 interface AdminOrgRepo {
   id: string;
@@ -245,6 +245,14 @@ export default function AdminDashboardPage() {
               <span className="w-2 h-2 rounded-full bg-emerald-500" />
               <span className="text-slate-600 font-semibold">{session?.user?.email}</span>
             </div>
+
+            <a
+              href="/dashboard"
+              className="p-2 sm:px-3 sm:py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl border border-slate-700 transition-all flex items-center gap-1.5 text-xs font-bold shadow-xs cursor-pointer"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5 text-blue-400" />
+              <span>Dashboard</span>
+            </a>
 
             <button
               type="button"
