@@ -532,7 +532,7 @@ function Hero({ onLoadDemo, onSignUp, onSignIn, setIsModalOpen, setIsContactModa
           transition={{ duration: 0.85, delay: 0.5, ease: EASE_OUT_EXPO }}
           className="flex items-center justify-center gap-3.5 flex-wrap mb-12"
         >
-          {/* Primary CTA */}
+          {/* Primary CTA — only button in hero */}
           {session?.user ? (
             <a
               href="/dashboard"
@@ -550,32 +550,6 @@ function Hero({ onLoadDemo, onSignUp, onSignIn, setIsModalOpen, setIsContactModa
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
             </button>
           )}
-
-          {/* Secondary CTA: View Demo (points to sandbox interactive demo) */}
-          <button
-            onClick={onLoadDemo}
-            className={`text-[14px] sm:text-[15px] font-bold px-7 py-3.5 rounded-full border transition-all flex items-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-[0.98] ${
-              isDarkMode
-                ? 'border-slate-700 bg-slate-900/90 text-slate-200 hover:bg-slate-800 hover:text-white'
-                : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50 shadow-sm'
-            }`}
-          >
-            <Play className="w-4 h-4 text-blue-500 fill-blue-500" />
-            <span>View Demo</span>
-          </button>
-
-          {/* Alternate CTA: Contact Us (opens contact modal) */}
-          <button
-            onClick={() => setIsContactModalOpen(true)}
-            className={`text-[14px] sm:text-[15px] font-bold px-6 py-3.5 rounded-full border transition-all flex items-center gap-2 cursor-pointer ${
-              isDarkMode
-                ? 'border-slate-800/80 bg-slate-900/40 text-slate-300 hover:text-white hover:bg-slate-800'
-                : 'border-slate-200 bg-slate-100/70 text-slate-700 hover:bg-slate-200 hover:text-slate-900'
-            }`}
-          >
-            <Mail className="w-4 h-4 text-blue-500" />
-            <span>Contact Us</span>
-          </button>
         </motion.div>
 
       </motion.div>
@@ -931,25 +905,16 @@ export default function MarketingLanding({
                 </button>
               </>
             ) : (
-              <>
-                <button
-                  onClick={onSignIn}
-                  className={`text-xs sm:text-[13px] font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-full border transition-all flex items-center gap-1 cursor-pointer ${
-                    isDarkMode ? 'border-slate-700 bg-slate-900 text-slate-200 hover:text-white' : 'border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100'
-                  }`}
-                >
-                  <span>Sign In</span>
-                </button>
-                <button
-                  onClick={onSignUp}
-                  className={`text-xs sm:text-[13px] font-semibold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full transition-all shadow-sm flex items-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap ${
-                    isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'
-                  }`}
-                >
-                  <BarChart3 className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-                  <span>Get Started</span>
-                </button>
-              </>
+              // Unauthenticated: only "Get Started" — no Sign In clutter
+              <button
+                onClick={onSignUp}
+                className={`text-xs sm:text-[13px] font-semibold px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-full transition-all shadow-sm flex items-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap ${
+                  isDarkMode ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-950 hover:bg-slate-850 text-white'
+                }`}
+              >
+                <BarChart3 className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
+                <span>Get Started</span>
+              </button>
             )}
           </div>
 
