@@ -168,19 +168,50 @@ def get_current_user(authorization: Optional[str] = Header(None, alias="Authoriz
 
     if not token:
         raise HTTPException(status_code=401, detail="Missing or invalid authorization header")
-
     payload = verify_jwt_hs256(token, SUPABASE_JWT_SECRET)
-    user_id = payload.get("sub")
-    email = payload.get("email")
-    role = payload.get("role")
+    user_id = payload.get("sub") or payload.get("id")
+    email = (
+        payload.get("email") or 
+        (payload.get("user_metadata") if isinstance(payload.get("user_metadata"), dict) else {}).get("email") or 
+        (payload.get("user_metadata") if isinstance(payload.get("user_metadata"), dict) else {}).get("user_email") or 
+        (payload.get("identities", [{}])[0].get("identity_data") if isinstance(payload.get("identities"), list) and len(payload.get("identities")) > 0 else {}).get("email")
+    )
     
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token: missing subject (user_id)")
-        
+
+    from database import User, OrgMembership, OrgSettings
+    if not email and user_id:
+        u_rec = db.query(User).filter((User.id == user_id) | (User.email == user_id)).first()
+        if u_rec and u_rec.email:
+            email = u_rec.email
+        elif "@" in str(user_id):
+            email = str(user_id)
+
+    if user_id and email:
+        u_rec = db.query(User).filter_by(id=user_id).first()
+        if not u_rec:
+            u_rec = db.query(User).filter_by(email=email).first()
+            if u_rec:
+                u_rec.id = user_id
+                db.commit()
+            else:
+                u_rec = User(id=user_id, email=email)
+                db.add(u_rec)
+                db.commit()
+        elif u_rec.email != email:
+            u_rec.email = email
+            db.commit()
+
     logger.info(f"[Branchdeck Auth] Extracted user identity from token: user_id={user_id}, email={email}")
     # Resolve organization context from SQL database mapping table
-    from database import OrgMembership
     membership = db.query(OrgMembership).filter_by(user_id=user_id).first()
+    if not membership and email:
+        membership = db.query(OrgMembership).filter_by(user_id=email).first()
+        if membership:
+            membership.user_id = user_id
+            db.commit()
+
     if not membership:
         # Try resolving via GitHub username context if user logged in with GitHub OAuth
         github_login = payload.get("user_metadata", {}).get("user_name")
@@ -228,22 +259,12 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         corr_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
         token = correlation_id_ctx.set(corr_id)
-        
-        t_user = user_id_ctx.set("")
-        t_org = organization_id_ctx.set("")
-        t_repo = repository_ctx.set("")
-        t_ep = endpoint_ctx.set(request.url.path)
-        
         try:
             response = await call_next(request)
             response.headers["X-Correlation-ID"] = corr_id
             return response
         finally:
             correlation_id_ctx.reset(token)
-            user_id_ctx.reset(t_user)
-            organization_id_ctx.reset(t_org)
-            repository_ctx.reset(t_repo)
-            endpoint_ctx.reset(t_ep)
 
 app.add_middleware(CorrelationIdMiddleware)
 
@@ -2391,9 +2412,19 @@ export async function POST(req: Request) {{
 # ---------------------------------------------------------------------------
 ADMIN_ALLOWLIST = {"adelmuhammed786@gmail.com"}
 
-def verify_admin_access(current_user: AuthenticatedUser):
+def verify_admin_access(current_user: AuthenticatedUser, db: Session = None):
     user_email = (current_user.email or "").strip().lower()
+    if not user_email and current_user.user_id:
+        if "@" in str(current_user.user_id):
+            user_email = str(current_user.user_id).strip().lower()
+        elif db:
+            from database import User
+            u = db.query(User).filter_by(id=current_user.user_id).first()
+            if u and u.email:
+                user_email = u.email.strip().lower()
+
     if not user_email or user_email not in ADMIN_ALLOWLIST:
+        logger.warning(f"[Admin Guard] Access denied for user_id='{current_user.user_id}', email='{current_user.email}'")
         raise HTTPException(status_code=404, detail="Not Found")
 
 class AdminBudgetPayload(BaseModel):
@@ -2405,7 +2436,7 @@ async def get_admin_overview(
     db: Session = Depends(get_db),
     current_user: AuthenticatedUser = Depends(get_current_user)
 ):
-    verify_admin_access(current_user)
+    verify_admin_access(current_user, db)
 
     memberships = db.query(OrgMembership).all()
     orgs_map = {}

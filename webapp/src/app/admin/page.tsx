@@ -103,7 +103,13 @@ export default function AdminDashboardPage() {
       return;
     }
 
-    const email = userSession.user?.email?.toLowerCase() || '';
+    const email = (
+      userSession.user?.email ||
+      userSession.user?.user_metadata?.email ||
+      userSession.user?.user_metadata?.user_email ||
+      ''
+    ).toLowerCase().trim();
+
     if (!ADMIN_ALLOWLIST.includes(email)) {
       setAuthorized(false);
       setLoading(false);
