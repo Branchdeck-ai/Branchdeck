@@ -1939,56 +1939,70 @@ export default function ClientDashboard() {
               {/* ── Connected Repositories Grid ── */}
               <div>
                 <h3 className="text-sm font-bold text-slate-900 mb-3">Active Connected Repositories</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {(repos.length > 0 ? repos : [
-                    { id: 'repo-1', name: 'branchdeck-core', default_branch: 'main', language: 'TypeScript', has_pat: true, github_url: 'https://github.com/Resummit-ai/Resummit' },
-                  ]).map((repo: any) => (
-                    <div key={repo.id} className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold">
-                            <GitBranch className="w-5 h-5" />
+                {repos.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-8 text-center space-y-3">
+                    <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto">
+                      <GitBranch className="w-6 h-6 text-slate-400" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-sm font-bold text-slate-900">No Connected Repositories Yet</p>
+                      <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                        Connect your GitHub repository above with a fine-grained Personal Access Token or GitHub App to enable Branchdeck AST graph monitoring.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {repos.map((repo: any) => (
+                      <div key={repo.id} className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold">
+                              <GitBranch className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">{repo.name}</h3>
+                              {repo.github_url ? (
+                                <a
+                                  href={repo.github_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-xs text-blue-600 hover:underline font-mono mt-0.5 flex items-center gap-1"
+                                >
+                                  {repo.github_url}
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              ) : (
+                                <span className="text-xs text-slate-400 font-mono mt-0.5">{repo.name}</span>
+                              )}
+                            </div>
+                          </div>
+                          <span className={`text-[11px] font-bold px-3 py-1 rounded-full border flex items-center gap-1 ${
+                            repo.has_pat || repo.connection_method === 'PAT' || repo.github_installation_id
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-slate-100 text-slate-600 border-slate-200'
+                          }`}>
+                            <Shield className="w-3 h-3" />
+                            {repo.github_installation_id ? 'GitHub App Connected' : 'PAT Verified & Encrypted'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
+                          <div>
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Token Storage</span>
+                            <span className="font-mono font-semibold text-slate-900">
+                              {repo.github_installation_id ? 'GitHub App Installation' : 'Encrypted Ciphertext'}
+                            </span>
                           </div>
                           <div>
-                            <h3 className="text-base font-bold text-slate-900">{repo.name}</h3>
-                            <a
-                              href={repo.github_url || `https://github.com/Resummit-ai/${repo.name}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="text-xs text-blue-600 hover:underline font-mono mt-0.5 flex items-center gap-1"
-                            >
-                              {repo.github_url || `https://github.com/Resummit-ai/${repo.name}`}
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
+                            <span className="text-slate-400 block text-[10px] uppercase font-bold">Status</span>
+                            <span className="font-semibold text-blue-600">Ready for AST Parsing</span>
                           </div>
                         </div>
-                        <span className={`text-[11px] font-bold px-3 py-1 rounded-full border flex items-center gap-1 ${
-                          repo.has_pat
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-slate-100 text-slate-600 border-slate-200'
-                        }`}>
-                          <Shield className="w-3 h-3" />
-                          {repo.has_pat ? 'PAT Verified & Encrypted' : 'Demo Repo'}
-                        </span>
                       </div>
-
-                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
-                        <div>
-                          <span className="text-slate-400 block text-[10px] uppercase font-bold">Token Storage</span>
-                          <span className="font-mono font-semibold text-slate-900">
-                            {repo.has_pat ? 'Encrypted Ciphertext' : 'N/A'}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block text-[10px] uppercase font-bold">Status</span>
-                          <span className="font-bold text-blue-700">
-                            Ready for AST Parsing
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
