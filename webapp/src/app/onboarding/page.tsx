@@ -72,8 +72,13 @@ export default function OnboardingPage() {
         
         if (savedRepoStr || isAppInstalled) {
           try {
-            const parsed = savedRepoStr ? JSON.parse(savedRepoStr) : { name: 'Resummit', github_url: 'https://github.com/Resummit-ai/Resummit' };
-            setConnectedRepo(parsed);
+            // SECURITY: Only parse the repo from localStorage — never inject hardcoded fallback data.
+            // If isAppInstalled is true but no localStorage entry exists, the user will be prompted
+            // to select/confirm their repo in step 2 after the backend fetches their installations.
+            if (savedRepoStr) {
+              const parsed = JSON.parse(savedRepoStr);
+              setConnectedRepo(parsed);
+            }
             setStep(2);
           } catch (e) {
             setStep(2);

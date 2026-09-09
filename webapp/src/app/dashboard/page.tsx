@@ -1529,7 +1529,7 @@ export default function ClientDashboard() {
               </div>
 
               <FeatureCatalog
-                repoName={repos[0]?.name || 'Resummit'}
+                repoName={repos[0]?.name || ''}
                 onGenerate={async (desc, model) => {
                   try {
                     const targetRepoId = repos[0]?.id || '';

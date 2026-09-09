@@ -5,6 +5,11 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('Authorization');
+    // SECURITY: Reject unauthenticated requests at the BFF layer before forwarding upstream.
+    if (!authHeader) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get('organization_id');
 
@@ -13,13 +18,11 @@ export async function GET(request: Request) {
       upstream.searchParams.set('organization_id', organizationId);
     }
 
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-    if (authHeader) headers['Authorization'] = authHeader;
-
     const res = await fetch(upstream.toString(), {
-      headers,
+      headers: {
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+      },
     });
 
     const data = await res.json();

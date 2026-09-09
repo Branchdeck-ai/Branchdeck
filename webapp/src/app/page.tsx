@@ -316,7 +316,9 @@ export default function Dashboard() {
       isCurrentUser: true,
     } : null;
 
-    if (repoSource === 'mock-ecommerce' || repoSource === '') {
+    // SECURITY: Mock/demo team members must ONLY appear in explicit demo mode.
+    // Never show fake members in a real authenticated session (repoSource === '' is a real session pre-load).
+    if (repoSource === 'mock-ecommerce') {
       return [
         ...(localCurrentUser ? [localCurrentUser] : []),
         { id: 'demo1', name: 'Alex River', email: 'alex@company.com', avatar: 'AR', color: 'bg-sky-500', status: 'online' as const, role: 'Staff Engineer', currentFile: 'src/checkout/checkout.controller.ts', isCurrentUser: false },

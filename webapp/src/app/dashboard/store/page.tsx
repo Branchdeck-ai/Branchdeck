@@ -241,7 +241,7 @@ export default function DashboardStorePage() {
         {/* Reusable Consolidated Feature Catalog Component */}
         {!successResult && (
           <FeatureCatalog
-            repoName={selectedRepo?.name || 'Resummit'}
+            repoName={selectedRepo?.name || ''}
             onGenerate={handleGenerate}
             loading={genLoading}
             error={genError}

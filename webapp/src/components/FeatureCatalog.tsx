@@ -292,7 +292,7 @@ export default function FeatureCatalog({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs font-bold text-slate-900">
-                Connected Repo: <code className="text-blue-600 font-mono bg-blue-50 px-2 py-0.5 rounded-md">{repoName || 'Resummit'}</code>
+                Connected Repo: <code className="text-blue-600 font-mono bg-blue-50 px-2 py-0.5 rounded-md">{repoName || 'your repository'}</code>
               </span>
               <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
                 {catalog.domain}
