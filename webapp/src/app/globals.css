@@ -1,10 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,slnt,wdth,wght,ROND@8..144,-10..0,25..150,400..700,0..100&family=Google+Sans+Code:ital,wght@0,300..700;1,300..700&family=Google+Symbols:opsz,wght,FILL,GRAD,ROND@40..48,300,0..1,0,50&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import "tailwindcss";
 
-/* ── Premium Spacing & Google Typography System ── */
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'SFMono-Regular', 'Fira Code', 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* ── Inter Typography System ── */
 :root {
-  --font-google-sans: 'Google Sans Flex', 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-google-code: 'Google Sans Code', 'Fira Code', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'SFMono-Regular', 'Fira Code', 'JetBrains Mono', ui-monospace, monospace;
   --space-1: 8px;
   --space-2: 16px;
   --space-3: 24px;
@@ -19,10 +24,18 @@
   --space-24: 192px;
   --space-28: 220px;
 
-  /* Google signature ease curves */
+  /* Ease curves */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
   --ease-out-cubic: cubic-bezier(0.33, 1, 0.68, 1);
+
+  /* Design tokens matching the clean card UI */
+  --bg-base: #f5f5f7;
+  --bg-card: #ffffff;
+  --border-subtle: rgba(0, 0, 0, 0.07);
+  --text-primary: #111111;
+  --text-secondary: #6e6e73;
+  --accent: #6B48FF;
 }
 
 /* ── Smooth, momentum-based scrolling with stable scrollbar gutter ── */
@@ -38,8 +51,10 @@ html {
 body {
   overflow-x: hidden;
   will-change: scroll-position;
-  font-family: var(--font-google-sans);
-  letter-spacing: -0.012em;
+  font-family: var(--font-sans);
+  letter-spacing: -0.011em;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-variation-settings: normal;
 }
 
 /* ── Noise texture overlay (subtle grain) ──────────────────── */

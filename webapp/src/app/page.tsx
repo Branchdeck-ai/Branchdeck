@@ -1146,7 +1146,14 @@ export default function Dashboard() {
           onSignUp={() => openAuth('signup')}
           onSignOut={handleLogOut}
           onOpenRepoPicker={() => { window.location.href = '/dashboard'; }}
-          onLoadDemo={() => { window.location.href = '/dashboard'; }}
+          onLoadDemo={() => {
+            handleLoadCallFlow('login');
+            setFeatures(ECOMMERCE_DEMO_FEATURES);
+            setCallNodes(ECOMMERCE_DEMO_CALLS.nodes);
+            setCallEdges(ECOMMERCE_DEMO_CALLS.edges);
+            setRepoSource('mock-ecommerce');
+            setHasData(true);
+          }}
         />
         <AuthModal
           isOpen={isAuthOpen}
