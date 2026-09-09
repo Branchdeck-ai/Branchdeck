@@ -831,10 +831,7 @@ export default function ClientDashboard() {
   // ── Load orgs ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!session?.access_token) {
-      setOrgs([
-        { id: 'org-demo-acme', role: 'Owner' },
-        { id: 'org_demo_123', role: 'Owner' }
-      ]);
+      setOrgs([{ id: 'org-demo-acme', role: 'Owner' }]);
       setActiveOrg('org-demo-acme');
       return;
     }
@@ -860,13 +857,23 @@ export default function ClientDashboard() {
             const newOrg = { id: provRes.organization_id, role: provRes.role || 'owner' };
             setOrgs([newOrg]);
             setActiveOrg(provRes.organization_id);
+          } else {
+            const fallbackOrgId = `org-selfserve-${session.user?.id ? session.user.id.slice(0, 8) : 'user'}`;
+            setOrgs([{ id: fallbackOrgId, role: 'owner' }]);
+            setActiveOrg(fallbackOrgId);
           }
         } catch (provErr) {
           console.error('[Branchdeck Dashboard] Error provisioning self-serve organization:', provErr);
+          const fallbackOrgId = `org-selfserve-${session.user?.id ? session.user.id.slice(0, 8) : 'user'}`;
+          setOrgs([{ id: fallbackOrgId, role: 'owner' }]);
+          setActiveOrg(fallbackOrgId);
         }
       }
     }).catch((err) => {
       console.error('[Branchdeck Dashboard] Error fetching user organizations:', err);
+      const fallbackOrgId = `org-selfserve-${session.user?.id ? session.user.id.slice(0, 8) : 'user'}`;
+      setOrgs([{ id: fallbackOrgId, role: 'owner' }]);
+      setActiveOrg(fallbackOrgId);
     });
   }, [authedFetch, session]);
 
