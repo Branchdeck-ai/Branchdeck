@@ -118,8 +118,8 @@ export default function HomePage() {
         onSignUp={() => openAuth('signup')}
         onSignOut={handleLogOut}
         onOpenRepoPicker={() => { window.location.href = '/dashboard'; }}
-        /* "Open Live Dashboard" → goes directly to the real AI cost & analytics dashboard */
-        onLoadDemo={() => { window.location.href = '/dashboard'; }}
+        /* "Open Live Dashboard" → demo mode: full AI cost & analytics dashboard, no login required */
+        onLoadDemo={() => { window.location.href = '/dashboard?demo=1'; }}
       />
 
       <AuthModal

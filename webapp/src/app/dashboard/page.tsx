@@ -656,6 +656,12 @@ const DEMO_REPOS = [
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function ClientDashboard() {
+  // ── Demo mode: ?demo=1 bypasses auth and loads seed data ────────────────────
+  const [isDemoMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('demo') === '1';
+  });
+
   const [session, setSession] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [activeNav, setActiveNav] = useState('dashboard');
@@ -784,8 +790,22 @@ export default function ClientDashboard() {
     }
   };
 
+  // ── Demo mode bootstrap: skip auth entirely ─────────────────────────────────
+  useEffect(() => {
+    if (!isDemoMode) return;
+    // Load demo seed data immediately — no auth required
+    setSummary(DEMO_SUMMARY);
+    setIntegrations(DEMO_INTEGRATIONS);
+    setRepos(DEMO_REPOS);
+    setOrgs([{ id: 'org-demo-acme', role: 'Owner' }]);
+    setActiveOrg('org-demo-acme');
+    setLoading(false);
+    setAuthLoading(false);
+  }, [isDemoMode]);
+
   // ── Auth bootstrap ──────────────────────────────────────────────────────────
   useEffect(() => {
+    if (isDemoMode) return; // skip auth in demo mode
     if (!isSupabaseConfigured) {
       setAuthLoading(false);
       return;
@@ -805,7 +825,7 @@ export default function ClientDashboard() {
       }
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [isDemoMode]);
 
   // ── Authenticated fetch ─────────────────────────────────────────────────────
   const authedFetch = useCallback(async (url: string, init?: RequestInit) => {
@@ -979,7 +999,10 @@ export default function ClientDashboard() {
     }
   }, [activeOrg, range, authedFetch, session]);
 
-  useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
+  useEffect(() => {
+    if (isDemoMode) return; // demo data already loaded by the demo bootstrap useEffect
+    fetchDashboard();
+  }, [fetchDashboard, isDemoMode]);
 
   // ── Per-integration cost map (join summary.per_integration by id) ───────────
   const costMap = useMemo(() => {
