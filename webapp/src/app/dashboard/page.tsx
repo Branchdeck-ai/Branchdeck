@@ -612,64 +612,6 @@ function AuthGate({ onReady }: { onReady: (session: any) => void }) {
 }
 
 
-// ─── Dynamic Realistic Demo Seed Data ───────────────────────────────────────
-
-function generateDemoDaily(): DailyBucket[] {
-  const list: DailyBucket[] = [];
-  const now = new Date();
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(now.getDate() - i);
-    const dayStr = d.toISOString().split('T')[0];
-    // Realistic smooth variance with upwards adoption curve
-    const tokenVal = Math.round(75000 + (29 - i) * 9500 + Math.sin(i * 0.7) * 35000);
-    const costVal = Number((tokenVal * 0.000041).toFixed(2));
-    list.push({ day: dayStr, tokens: tokenVal, cost_usd: costVal });
-  }
-  return list;
-}
-
-const demoDailyBuckets = generateDemoDaily();
-const demoTotalCost = Number(demoDailyBuckets.reduce((sum, b) => sum + b.cost_usd, 0).toFixed(2));
-const demoTotalTokens = demoDailyBuckets.reduce((sum, b) => sum + b.tokens, 0);
-
-const DEMO_SUMMARY: Summary = {
-  success: true,
-  window_days: 30,
-  monthly_budget_usd: 500,
-  cost_usd: demoTotalCost,
-  avg_latency_ms: 284,
-  total_calls: 3840,
-  integrations: {
-    total: 5,
-    by_status: { active_retainer: 3, merged: 1, pr_ready: 1 },
-    by_type: { search: 2, support_agent: 2, document_processing: 1 },
-  },
-  tokens: {
-    in: Math.round(demoTotalTokens * 0.72),
-    out: Math.round(demoTotalTokens * 0.28),
-    total: demoTotalTokens,
-  },
-  per_integration: [
-    { integration_id: 'integ-1', name: 'AI Semantic Search', type: 'search', tokens: Math.round(demoTotalTokens * 0.42), cost_usd: Number((demoTotalCost * 0.42).toFixed(2)) },
-    { integration_id: 'integ-2', name: 'Support & Ops Agent', type: 'support_agent', tokens: Math.round(demoTotalTokens * 0.44), cost_usd: Number((demoTotalCost * 0.44).toFixed(2)) },
-    { integration_id: 'integ-3', name: 'Document Processing', type: 'document_processing', tokens: Math.round(demoTotalTokens * 0.14), cost_usd: Number((demoTotalCost * 0.14).toFixed(2)) },
-  ],
-  daily: demoDailyBuckets,
-};
-
-const DEMO_INTEGRATIONS: Integration[] = [
-  { id: 'integ-1', repo_id: 'repo-1', name: 'AI Semantic Search', type: 'search', status: 'merged', pr_url: 'https://github.com/branchdeck-ai/main-app/pull/104', ast_match_score: 99.4, request_count: 1840, created_at: '2026-08-01', updated_at: '2026-09-10' },
-  { id: 'integ-2', repo_id: 'repo-1', name: 'Support & Ops Agent', type: 'support_agent', status: 'pr_ready', pr_url: 'https://github.com/branchdeck-ai/main-app/pull/142', ast_match_score: 98.8, request_count: 1290, created_at: '2026-08-10', updated_at: '2026-09-10' },
-  { id: 'integ-3', repo_id: 'repo-1', name: 'Document Processing', type: 'document_processing', status: 'active_retainer', pr_url: 'https://github.com/branchdeck-ai/main-app/pull/98', ast_match_score: 99.1, request_count: 710, created_at: '2026-08-15', updated_at: '2026-09-10' },
-  { id: 'integ-4', repo_id: 'repo-1', name: 'Codebase Indexer', type: 'search', status: 'active_retainer', pr_url: null, ast_match_score: 100.0, request_count: 0, created_at: '2026-08-20', updated_at: '2026-09-10' },
-  { id: 'integ-5', repo_id: 'repo-1', name: 'Ticket Assistant', type: 'support_agent', status: 'active_retainer', pr_url: null, ast_match_score: 99.0, request_count: 0, created_at: '2026-08-25', updated_at: '2026-09-10' },
-];
-
-const DEMO_REPOS = [
-  { id: 'repo-1', name: 'acme/main-app', url: 'https://github.com/acme/main-app', default_branch: 'main', ast_status: 'synced', created_at: '2026-08-01' },
-];
-
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 export default function ClientDashboard() {
@@ -810,12 +752,6 @@ export default function ClientDashboard() {
   // ── Demo mode bootstrap: skip auth entirely ─────────────────────────────────
   useEffect(() => {
     if (!isDemoMode) return;
-    // Load demo seed data immediately — no auth required
-    setSummary(DEMO_SUMMARY);
-    setIntegrations(DEMO_INTEGRATIONS);
-    setRepos(DEMO_REPOS);
-    setOrgs([{ id: 'demo-workspace', role: 'Owner' }]);
-    setActiveOrg('demo-workspace');
     setLoading(false);
     setAuthLoading(false);
   }, [isDemoMode]);
@@ -938,16 +874,11 @@ export default function ClientDashboard() {
         authedFetch(`/api/dashboard/repos?organization_id=${currentOrg}`).catch(() => ({ success: false, repos: [] })),
       ]);
 
-      const isDemoOrg = !isUserAuth && (currentOrg.includes('demo') || currentOrg.includes('org_demo') || currentOrg.includes('org-demo'));
-
       if (summaryData.success && summaryData.integrations) {
         setSummary(summaryData);
         if (typeof summaryData.monthly_budget_usd === 'number') {
           setBudgetCap(summaryData.monthly_budget_usd);
         }
-      } else if (isDemoOrg) {
-        setSummary(DEMO_SUMMARY);
-        setBudgetCap(500);
       } else {
         setSummary({
           success: true,
@@ -970,16 +901,12 @@ export default function ClientDashboard() {
 
       if (integrationData.success && Array.isArray(integrationData.integrations)) {
         setIntegrations(integrationData.integrations);
-      } else if (isDemoOrg) {
-        setIntegrations(DEMO_INTEGRATIONS);
       } else {
         setIntegrations([]);
       }
 
       if (repoData.success && Array.isArray(repoData.repos)) {
         setRepos(repoData.repos);
-      } else if (isDemoOrg) {
-        setRepos(DEMO_REPOS);
       } else {
         setRepos([]);
       }
@@ -1004,11 +931,6 @@ export default function ClientDashboard() {
         });
         setIntegrations([]);
         setRepos([]);
-        setBudgetCap(500);
-      } else {
-        setSummary(DEMO_SUMMARY);
-        setIntegrations(DEMO_INTEGRATIONS);
-        setRepos(DEMO_REPOS);
         setBudgetCap(500);
       }
     } finally {
@@ -1509,7 +1431,7 @@ export default function ClientDashboard() {
                                 <td className="px-3 py-3.5">
                                   {integ.ast_match_score != null ? (
                                     <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-md">
-                                      {(integ.ast_match_score * 100).toFixed(1)}%
+                                      {fmtAstScore(integ.ast_match_score)}
                                     </span>
                                   ) : (
                                     <span className="text-slate-300 text-xs font-mono">—</span>

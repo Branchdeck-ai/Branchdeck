@@ -23,6 +23,12 @@ import {
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { ADMIN_ALLOWLIST, isAdminUser } from '@/lib/admin';
 
+function fmtAstScore(score: number | null | undefined): string {
+  if (score == null) return '—';
+  const val = score > 1 ? score : score * 100;
+  return `${val.toFixed(1)}%`;
+}
+
 interface AdminOrgRepo {
   id: string;
   name: string;
@@ -536,9 +542,7 @@ export default function AdminDashboardPage() {
                                 </span>
                               </td>
                               <td className="p-2.5 font-mono font-bold text-purple-700">
-                                {typeof i.ast_match_score === 'number'
-                                  ? `${(i.ast_match_score > 1 ? i.ast_match_score : i.ast_match_score * 100).toFixed(1)}%`
-                                  : '96.5%'}
+                                {fmtAstScore(i.ast_match_score)}
                               </td>
                               <td className="p-2.5">
                                 {i.pr_url ? (
