@@ -611,13 +611,7 @@ async def analyze_codebase(payload: AnalyzePayload, background_tasks: Background
     url = payload.url
     
     if not workspace_path or not files:
-        response.status_code = 200
-        return {
-            "success": True,
-            "source": "mock-ecommerce",
-            "features": ECOMMERCE_DEMO_FEATURES,
-            "callGraph": ECOMMERCE_DEMO_CALLS
-        }
+        raise HTTPException(status_code=400, detail="Repository workspacePath and file list are required for AST analysis.")
         
     # 1. Enforce repository file count limit (maximum 1,000 files)
     if len(files) > 1000:

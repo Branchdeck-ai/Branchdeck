@@ -21,7 +21,7 @@ SEED_USER_ID = os.getenv("SEED_USER_ID", "user-demo-001")
 # Multi-organization seed configuration
 SEED_ORGANIZATIONS = [
     {
-        "org_id": "org-demo-acme",
+        "org_id": "demo-workspace",
         "repo_name": "acme-backend",
         "monthly_budget": 500.0,
         "integrations": [

@@ -73,14 +73,7 @@ export async function POST(request: Request) {
     }
     const targetUrl = url.trim();
 
-    if (targetUrl === 'mock-ecommerce') {
-      return NextResponse.json({
-        success: true,
-        source: 'mock-ecommerce',
-        features: ECOMMERCE_DEMO_FEATURES,
-        callGraph: ECOMMERCE_DEMO_CALLS
-      });
-    }
+
 
     const githubDetails = parseGitHubUrl(targetUrl);
     if (!githubDetails) {

@@ -240,7 +240,7 @@ function FeatureRealPreview({ activeFeature }: { activeFeature: number }) {
       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
         <div>
           <div className="text-xs font-black text-slate-900 tracking-tight">AI Semantic Search Integration</div>
-          <div className="text-[10px] text-slate-500 font-medium">Wired into native auth &amp; AST codebase index &bull; org-demo-acme</div>
+          <div className="text-[10px] text-slate-500 font-medium">Wired into native auth &amp; AST codebase index &bull; demo-workspace</div>
         </div>
         <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
           <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Merged to main
@@ -354,7 +354,7 @@ function FeatureRealPreview({ activeFeature }: { activeFeature: number }) {
       <div className="flex items-center justify-between border-b border-slate-200 pb-3">
         <div>
           <div className="text-xs font-black text-slate-900 tracking-tight">Spend Governance &amp; Token Dashboard</div>
-          <div className="text-[10px] text-slate-500 font-medium">Real-time cost attribution across active retainer features &bull; org-demo-acme</div>
+          <div className="text-[10px] text-slate-500 font-medium">Real-time cost attribution across active retainer features &bull; demo-workspace</div>
         </div>
         <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
           <CheckCircle2 className="w-3 h-3 text-emerald-500" /> Spend Healthy &bull; 0 Spikes
@@ -606,7 +606,7 @@ function RealDashboardPreview({ onLoadDemo }: { onLoadDemo: () => void }) {
             </div>
             <span className="ml-3 text-[11px] font-mono text-slate-300 flex items-center gap-2">
               <GitBranch className="w-3.5 h-3.5 text-blue-400" />
-              Branchdeck Client Retainer Portal &bull; org-demo-acme
+              Branchdeck Client Retainer Portal &bull; demo-workspace
             </span>
           </div>
 
@@ -672,7 +672,7 @@ function RealDashboardPreview({ onLoadDemo }: { onLoadDemo: () => void }) {
             {/* Topbar Controls */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-2xs">
-                <span className="text-[11px] font-bold text-slate-700 font-mono">org-demo-acme</span>
+                <span className="text-[11px] font-bold text-slate-700 font-mono">demo-workspace</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               </div>
 
@@ -691,7 +691,7 @@ function RealDashboardPreview({ onLoadDemo }: { onLoadDemo: () => void }) {
             {/* Header Title */}
             <div>
               <h3 className="text-lg font-black text-slate-900 tracking-tight">Dashboard Overview</h3>
-              <p className="text-[11px] text-slate-500 font-medium">AI integration retainer overview &bull; org-demo-acme</p>
+              <p className="text-[11px] text-slate-500 font-medium">AI integration retainer overview &bull; demo-workspace</p>
             </div>
 
             {/* 4 KPI Cards Grid */}
@@ -1900,7 +1900,7 @@ export default function MarketingLanding({
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-xs font-black text-slate-900 tracking-tight">Dashboard Overview</div>
-                      <div className="text-[10px] text-slate-500 font-medium">AI integration retainer overview &bull; org-demo-acme</div>
+                      <div className="text-[10px] text-slate-500 font-medium">AI integration retainer overview &bull; demo-workspace</div>
                     </div>
                     <span className="text-[9px] font-bold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-md font-mono">Last 30d</span>
                   </div>

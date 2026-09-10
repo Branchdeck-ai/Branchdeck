@@ -42,3 +42,7 @@ secrets/
 # Databases
 *.db
 **/*.db
+
+# Scratch and temporary scripts
+scratch/
+**/scratch/

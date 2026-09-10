@@ -47,7 +47,7 @@ export default function DashboardStorePage() {
         setSession(currentSession);
 
         if (!currentSession) {
-          window.location.href = '/';
+          setLoading(false);
           return;
         }
 
@@ -189,20 +189,7 @@ export default function DashboardStorePage() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Title & Subtitle */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-extrabold uppercase tracking-wider text-blue-600">
-              Branchdeck AST Feature Marketplace
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-            AI Feature Store
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-600 max-w-3xl leading-relaxed font-sans">
-            Browse domain-tailored AI feature templates matched to your codebase's AST graph conventions. Select your preferred AI inference provider model and generate automated GitHub Pull Requests instantly.
-          </p>
-        </div>
+
 
         {/* Success Alert Banner */}
         {successResult && (

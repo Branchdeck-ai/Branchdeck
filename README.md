@@ -9,7 +9,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](webapp/package.json)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110-009688?logo=fastapi&logoColor=white)](backend/requirements.txt)
 [![Python](https://img.shields.io/badge/Python-3.12+-3776AB?logo=python&logoColor=white)](backend/requirements.txt)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/Branchdeck-ai/Branchdeck/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/dragon486/Branchdeck/issues)
 
 <br/>
 
@@ -364,7 +364,7 @@ Contributions are welcome! Areas of particular interest:
 ### Development workflow
 
 ```bash
-git clone https://github.com/Branchdeck-ai/Branchdeck.git
+git clone https://github.com/dragon486/Branchdeck.git
 cd Branchdeck
 
 # Start the database
@@ -389,7 +389,7 @@ See [RUNBOOK.md](RUNBOOK.md) for the full operations guide and [ARCHITECTURE_AS_
 
 ## 📄 License
 
-MIT © [Branchdeck-ai](https://github.com/Branchdeck-ai)
+MIT © [dragon486](https://github.com/dragon486)
 
 ---
 
@@ -397,6 +397,6 @@ MIT © [Branchdeck-ai](https://github.com/Branchdeck-ai)
 
 **Built to make large codebases human-scale.**
 
-[GitHub](https://github.com/Branchdeck-ai/Branchdeck) · [Issues](https://github.com/Branchdeck-ai/Branchdeck/issues) · [VS Code Extension](extension/)
+[GitHub](https://github.com/dragon486/Branchdeck) · [Issues](https://github.com/dragon486/Branchdeck/issues) · [VS Code Extension](extension/)
 
 </div>

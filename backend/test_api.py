@@ -110,15 +110,10 @@ def get_auth_headers(org: str = "local", correlation_id: str = None) -> dict:
         headers["X-Correlation-ID"] = correlation_id
     return headers
 
-def test_api_analyze_missing_params_falls_back_to_mock():
-    # Sending empty body should fall back to mock feature/calls response safely
+def test_api_analyze_missing_params_returns_400():
+    # Sending empty body to analyze endpoint requires workspacePath and files (returns 400)
     response = client.post("/api/analyze", json={}, headers=get_auth_headers())
-    assert response.status_code == 200
-    data = response.json()
-    assert data["success"] is True
-    assert data["source"] == "mock-ecommerce"
-    assert "features" in data
-    assert "callGraph" in data
+    assert response.status_code == 400
 
 def test_api_impact_missing_params_fails_validation():
     # Sending empty body to impact should trigger validation failure (422)

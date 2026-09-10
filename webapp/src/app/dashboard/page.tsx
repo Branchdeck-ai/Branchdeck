@@ -601,52 +601,58 @@ function AuthGate({ onReady }: { onReady: (session: any) => void }) {
 }
 
 
-// ─── Demo Seed Data ──────────────────────────────────────────────────────────
+// ─── Dynamic Realistic Demo Seed Data ───────────────────────────────────────
+
+function generateDemoDaily(): DailyBucket[] {
+  const list: DailyBucket[] = [];
+  const now = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    const dayStr = d.toISOString().split('T')[0];
+    // Realistic smooth variance with upwards adoption curve
+    const tokenVal = Math.round(75000 + (29 - i) * 9500 + Math.sin(i * 0.7) * 35000);
+    const costVal = Number((tokenVal * 0.000041).toFixed(2));
+    list.push({ day: dayStr, tokens: tokenVal, cost_usd: costVal });
+  }
+  return list;
+}
+
+const demoDailyBuckets = generateDemoDaily();
+const demoTotalCost = Number(demoDailyBuckets.reduce((sum, b) => sum + b.cost_usd, 0).toFixed(2));
+const demoTotalTokens = demoDailyBuckets.reduce((sum, b) => sum + b.tokens, 0);
 
 const DEMO_SUMMARY: Summary = {
   success: true,
   window_days: 30,
   monthly_budget_usd: 500,
-  cost_usd: 142.80,
-  avg_latency_ms: 342,
-  total_calls: 2640,
+  cost_usd: demoTotalCost,
+  avg_latency_ms: 284,
+  total_calls: 3840,
   integrations: {
     total: 5,
     by_status: { active_retainer: 3, merged: 1, pr_ready: 1 },
     by_type: { search: 2, support_agent: 2, document_processing: 1 },
   },
-  tokens: { in: 2410000, out: 990000, total: 3400000 },
+  tokens: {
+    in: Math.round(demoTotalTokens * 0.72),
+    out: Math.round(demoTotalTokens * 0.28),
+    total: demoTotalTokens,
+  },
   per_integration: [
-    { integration_id: 'integ-1', name: 'AI Semantic Search', type: 'search', tokens: 1200000, cost_usd: 58.40 },
-    { integration_id: 'integ-2', name: 'Support & Ops Agent', type: 'support_agent', tokens: 1800000, cost_usd: 64.20 },
-    { integration_id: 'integ-3', name: 'Document Processing', type: 'document_processing', tokens: 410000, cost_usd: 20.20 },
+    { integration_id: 'integ-1', name: 'AI Semantic Search', type: 'search', tokens: Math.round(demoTotalTokens * 0.42), cost_usd: Number((demoTotalCost * 0.42).toFixed(2)) },
+    { integration_id: 'integ-2', name: 'Support & Ops Agent', type: 'support_agent', tokens: Math.round(demoTotalTokens * 0.44), cost_usd: Number((demoTotalCost * 0.44).toFixed(2)) },
+    { integration_id: 'integ-3', name: 'Document Processing', type: 'document_processing', tokens: Math.round(demoTotalTokens * 0.14), cost_usd: Number((demoTotalCost * 0.14).toFixed(2)) },
   ],
-  daily: [
-    { day: '2026-08-06', tokens: 45000, cost_usd: 1.80 },
-    { day: '2026-08-08', tokens: 82000, cost_usd: 3.20 },
-    { day: '2026-08-10', tokens: 120000, cost_usd: 4.80 },
-    { day: '2026-08-12', tokens: 95000, cost_usd: 3.90 },
-    { day: '2026-08-14', tokens: 140000, cost_usd: 5.60 },
-    { day: '2026-08-16', tokens: 180000, cost_usd: 7.20 },
-    { day: '2026-08-18', tokens: 110000, cost_usd: 4.40 },
-    { day: '2026-08-20', tokens: 210000, cost_usd: 8.50 },
-    { day: '2026-08-22', tokens: 160000, cost_usd: 6.40 },
-    { day: '2026-08-24', tokens: 230000, cost_usd: 9.20 },
-    { day: '2026-08-26', tokens: 190000, cost_usd: 7.60 },
-    { day: '2026-08-28', tokens: 280000, cost_usd: 11.20 },
-    { day: '2026-08-30', tokens: 320000, cost_usd: 14.80 },
-    { day: '2026-09-01', tokens: 410000, cost_usd: 18.40 },
-    { day: '2026-09-03', tokens: 350000, cost_usd: 15.60 },
-    { day: '2026-09-05', tokens: 460000, cost_usd: 20.20 },
-  ],
+  daily: demoDailyBuckets,
 };
 
 const DEMO_INTEGRATIONS: Integration[] = [
-  { id: 'integ-1', repo_id: 'repo-1', name: 'AI Semantic Search', type: 'search', status: 'merged', pr_url: 'https://github.com/acme/app/pull/104', ast_match_score: 99.4, request_count: 1420, created_at: '2026-08-01', updated_at: '2026-09-04' },
-  { id: 'integ-2', repo_id: 'repo-1', name: 'Support & Ops Agent', type: 'support_agent', status: 'pr_ready', pr_url: 'https://github.com/acme/app/pull/142', ast_match_score: 98.8, request_count: 890, created_at: '2026-08-10', updated_at: '2026-09-04' },
-  { id: 'integ-3', repo_id: 'repo-1', name: 'Document Processing', type: 'document_processing', status: 'active_retainer', pr_url: 'https://github.com/acme/app/pull/98', ast_match_score: 99.1, request_count: 330, created_at: '2026-08-15', updated_at: '2026-09-04' },
-  { id: 'integ-4', repo_id: 'repo-1', name: 'Codebase Indexer', type: 'search', status: 'active_retainer', pr_url: null, ast_match_score: 100.0, request_count: 0, created_at: '2026-08-20', updated_at: '2026-09-04' },
-  { id: 'integ-5', repo_id: 'repo-1', name: 'Ticket Assistant', type: 'support_agent', status: 'active_retainer', pr_url: null, ast_match_score: 99.0, request_count: 0, created_at: '2026-08-25', updated_at: '2026-09-04' },
+  { id: 'integ-1', repo_id: 'repo-1', name: 'AI Semantic Search', type: 'search', status: 'merged', pr_url: 'https://github.com/branchdeck-ai/main-app/pull/104', ast_match_score: 99.4, request_count: 1840, created_at: '2026-08-01', updated_at: '2026-09-10' },
+  { id: 'integ-2', repo_id: 'repo-1', name: 'Support & Ops Agent', type: 'support_agent', status: 'pr_ready', pr_url: 'https://github.com/branchdeck-ai/main-app/pull/142', ast_match_score: 98.8, request_count: 1290, created_at: '2026-08-10', updated_at: '2026-09-10' },
+  { id: 'integ-3', repo_id: 'repo-1', name: 'Document Processing', type: 'document_processing', status: 'active_retainer', pr_url: 'https://github.com/branchdeck-ai/main-app/pull/98', ast_match_score: 99.1, request_count: 710, created_at: '2026-08-15', updated_at: '2026-09-10' },
+  { id: 'integ-4', repo_id: 'repo-1', name: 'Codebase Indexer', type: 'search', status: 'active_retainer', pr_url: null, ast_match_score: 100.0, request_count: 0, created_at: '2026-08-20', updated_at: '2026-09-10' },
+  { id: 'integ-5', repo_id: 'repo-1', name: 'Ticket Assistant', type: 'support_agent', status: 'active_retainer', pr_url: null, ast_match_score: 99.0, request_count: 0, created_at: '2026-08-25', updated_at: '2026-09-10' },
 ];
 
 const DEMO_REPOS = [
@@ -797,8 +803,8 @@ export default function ClientDashboard() {
     setSummary(DEMO_SUMMARY);
     setIntegrations(DEMO_INTEGRATIONS);
     setRepos(DEMO_REPOS);
-    setOrgs([{ id: 'org-demo-acme', role: 'Owner' }]);
-    setActiveOrg('org-demo-acme');
+    setOrgs([{ id: 'demo-workspace', role: 'Owner' }]);
+    setActiveOrg('demo-workspace');
     setLoading(false);
     setAuthLoading(false);
   }, [isDemoMode]);
@@ -859,8 +865,8 @@ export default function ClientDashboard() {
   // ── Load orgs ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!session?.access_token) {
-      setOrgs([{ id: 'org-demo-acme', role: 'Owner' }]);
-      setActiveOrg('org-demo-acme');
+      setOrgs([]);
+      setActiveOrg('');
       return;
     }
     console.log('[Branchdeck Dashboard] Fetching user organizations from backend...');
@@ -908,7 +914,7 @@ export default function ClientDashboard() {
   // ── Load dashboard data & repos ─────────────────────────────────────────────
   const fetchDashboard = useCallback(async () => {
     const isUserAuth = Boolean(session?.access_token);
-    const currentOrg = activeOrg || (isUserAuth ? `org-selfserve-${session?.user?.id?.slice(0, 8) || 'user'}` : 'org-demo-acme');
+    const currentOrg = activeOrg || (isUserAuth ? `org-selfserve-${session?.user?.id?.slice(0, 8) || 'user'}` : '');
 
     setLoading(true);
     setError(null);
@@ -1108,11 +1114,7 @@ export default function ClientDashboard() {
               <button
                 key={item.id}
                 onClick={() => {
-                  if (item.id === 'store') {
-                    window.location.href = '/dashboard/store';
-                  } else {
-                    setActiveNav(item.id);
-                  }
+                  setActiveNav(item.id);
                   setMobileSidebarOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all ${
@@ -1185,7 +1187,7 @@ export default function ClientDashboard() {
                 className="flex items-center gap-2 text-xs font-bold text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-colors shadow-2xs"
               >
                 <Building2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                <span className="max-w-[120px] sm:max-w-[160px] truncate">{activeOrg || (session ? 'Self-Serve Account' : 'org-demo-acme')}</span>
+                <span className="max-w-[120px] sm:max-w-[160px] truncate">{activeOrg || (session ? 'Self-Serve Account' : 'Select Organization')}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
               </button>
               {orgMenuOpen && orgs.length > 0 && (
