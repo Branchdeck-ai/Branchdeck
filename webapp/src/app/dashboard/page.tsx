@@ -786,12 +786,23 @@ export default function ClientDashboard() {
   };
 
   // ── Handle GitHub installation redirect ─────────────────────────────────────
+  const [githubInstalled, setGithubInstalled] = useState(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get('installation') === 'success' || params.get('installed') === 'true') {
+    const fromCallback = params.get('installation') === 'success' || params.get('installed') === 'true';
+    const fromStorage = localStorage.getItem('branchdeck_github_installed') === 'true';
+
+    if (fromCallback || fromStorage) {
+      if (fromCallback) {
+        localStorage.setItem('branchdeck_github_installed', 'true');
+        // Clean the URL params without a page reload
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, '', cleanUrl);
+      }
+      setGithubInstalled(true);
       setActiveNav('repos');
-      setConnectSuccess('GitHub App installation verified! Repositories linked successfully.');
+      setConnectSuccess('GitHub App installed! Branchdeck now has access to your repositories.');
     }
   }, []);
 
@@ -1978,39 +1989,92 @@ export default function ClientDashboard() {
 
                 {/* MODE 1 (MAIN): GitHub App Installation Hero CTA */}
                 {connectMode === 'github_app' ? (
-                  <div className="bg-slate-900 text-white rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-md border border-slate-800">
-                    <div className="space-y-2 max-w-xl">
-                      <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-400 bg-blue-950/80 border border-blue-800/60 px-3 py-0.5 rounded-full">
-                        <GithubIcon className="w-3.5 h-3.5" /> Main Recommended Connection
+                  githubInstalled || repos.length > 0 ? (
+                    /* Already installed — show manage link instead of install CTA */
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-emerald-900">GitHub App Connected</p>
+                          <p className="text-xs text-emerald-700 font-medium mt-0.5">Branchdeck has access to your organization repositories.</p>
+                        </div>
                       </div>
-                      <h3 className="text-lg font-bold text-white tracking-tight">
-                        Install & Authorize Branchdeck GitHub App
-                      </h3>
-                      <p className="text-xs text-slate-300 leading-relaxed">
-                        Grant Branchdeck automated access to sync commits, construct live call flows, and create AI feature Pull Requests for your organization repositories.
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <a
+                          href="https://github.com/organizations/Resummit-ai/settings/installations"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1"
+                        >
+                          Manage on GitHub <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            localStorage.removeItem('branchdeck_github_installed');
+                            setGithubInstalled(false);
+                            setConnectSuccess(null);
+                          }}
+                          className="text-xs text-slate-400 hover:text-slate-600"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="bg-slate-900 text-white rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-md border border-slate-800">
+                        <div className="space-y-2 max-w-xl">
+                          <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-blue-400 bg-blue-950/80 border border-blue-800/60 px-3 py-0.5 rounded-full">
+                            <GithubIcon className="w-3.5 h-3.5" /> Main Recommended Connection
+                          </div>
+                          <h3 className="text-lg font-bold text-white tracking-tight">
+                            Install & Authorize Branchdeck GitHub App
+                          </h3>
+                          <p className="text-xs text-slate-300 leading-relaxed">
+                            Grant Branchdeck automated access to sync commits, construct live call flows, and create AI feature Pull Requests for your organization repositories.
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleStartGitHubAppInstall}
+                          disabled={connectLoading}
+                          className="w-full md:w-auto flex-shrink-0 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-xs px-6 py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 border border-blue-400/30"
+                        >
+                          {connectLoading ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              Redirecting to GitHub...
+                            </>
+                          ) : (
+                            <>
+                              <GithubIcon className="w-4 h-4" />
+                              Install & Connect via GitHub App
+                              <ArrowRight className="w-4 h-4" />
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      {/* Manual recovery: already completed install on GitHub but no redirect */}
+                      <p className="text-xs text-center text-slate-500">
+                        Already installed the app on GitHub?{' '}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            localStorage.setItem('branchdeck_github_installed', 'true');
+                            setGithubInstalled(true);
+                            setConnectSuccess('GitHub App installation recorded. Fetching your repositories...');
+                          }}
+                          className="font-bold text-blue-600 hover:underline"
+                        >
+                          Click here to confirm
+                        </button>
                       </p>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={handleStartGitHubAppInstall}
-                      disabled={connectLoading}
-                      className="w-full md:w-auto flex-shrink-0 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold text-xs px-6 py-3.5 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 border border-blue-400/30"
-                    >
-                      {connectLoading ? (
-                        <>
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                          Redirecting to GitHub...
-                        </>
-                      ) : (
-                        <>
-                          <GithubIcon className="w-4 h-4" />
-                          Install & Connect via GitHub App
-                          <ArrowRight className="w-4 h-4" />
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  )
                 ) : (
                   /* MODE 2 (OPTION): Personal Access Token Form */
                   <form onSubmit={handleConnectRepo} className="space-y-4 pt-1">
