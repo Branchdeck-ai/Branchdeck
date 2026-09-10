@@ -123,19 +123,6 @@ export default function RepoPickerModal({
                 </button>
               </form>
 
-              <div className="pt-2 border-t border-white/10 text-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onLoadDemo();
-                    onClose();
-                  }}
-                  className="w-full bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-white border border-blue-500/30 font-bold text-xs py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                  <span>Or Load Interactive Demo Dashboard Directly &rarr;</span>
-                </button>
-              </div>
             </div>
           </motion.div>
         </motion.div>

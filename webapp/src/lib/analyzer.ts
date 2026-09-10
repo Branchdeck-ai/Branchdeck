@@ -53,166 +53,204 @@ export interface ImpactAnalysisResult {
   }>;
 }
 
-// Pre-defined premium Branchdeck Architecture demo dataset
-export const BRANCHDECK_DEMO_FEATURES: FeatureNode[] = [
+// Pre-defined premium E-commerce platform demo dataset
+export const ECOMMERCE_DEMO_FEATURES: FeatureNode[] = [
   {
-    id: 'project_map',
-    name: 'AI Project Map & AST Engine',
-    description: 'Parses codebase using tree-sitter & ts-morph to generate interactive structural dependency graphs.',
-    color: '#3b82f6',
+    id: 'auth',
+    name: 'Authentication',
+    description: 'Handles user login, token generation, session validation, and password resets.',
+    color: '#334155',
     files: [
-      'backend/parser.py',
-      'webapp/src/lib/analyzer.ts',
-      'webapp/src/lib/server-analyzer.ts',
-      'webapp/src/components/ProjectMap.tsx'
+      'src/auth/auth.service.ts',
+      'src/auth/auth.controller.ts',
+      'src/auth/strategies/jwt.strategy.ts',
+      'src/auth/dto/login.dto.ts',
+      'src/middleware/session.ts'
     ]
   },
   {
-    id: 'call_flow',
-    name: 'Visual Call Flow Engine',
-    description: 'Renders multi-hop function call graphs, tracing execution paths up to depth 3 in real-time.',
+    id: 'checkout',
+    name: 'Checkout & Cart',
+    description: 'Manages user shopping carts, tax calculations, discounts, and checkout flow initiation.',
     color: '#06b6d4',
     files: [
-      'webapp/src/components/CallFlowGraph.tsx',
-      'webapp/src/app/api/callflow/route.ts',
-      'backend/main.py'
+      'src/checkout/checkout.controller.ts',
+      'src/checkout/checkout.service.ts',
+      'src/cart/cart.service.ts',
+      'src/cart/cart.controller.ts'
     ]
   },
   {
-    id: 'impact_analysis',
-    name: 'Impact Scope Analysis',
-    description: 'Executes recursive CTE database queries to evaluate downstream blast radius for code changes.',
-    color: '#ef4444',
+    id: 'orders',
+    name: 'Order Management',
+    description: 'Coordinates order placement, state transitions, invoice creation, and order history tracking.',
+    color: '#0f172a',
     files: [
-      'webapp/src/components/ImpactPanel.tsx',
-      'webapp/src/app/api/impact/route.ts',
-      'backend/database.py'
+      'src/orders/order.service.ts',
+      'src/orders/order.controller.ts',
+      'src/orders/entities/order.entity.ts',
+      'src/orders/cron/billing.ts'
     ]
   },
   {
-    id: 'story_mode',
-    name: 'Story Mode Narrator',
-    description: 'AI-generated architecture walkthroughs powered by Gemini API with rule-based fallback.',
-    color: '#8b5cf6',
-    files: [
-      'webapp/src/components/StoryMode.tsx',
-      'webapp/src/app/api/story/route.ts',
-      'backend/main.py'
-    ]
-  },
-  {
-    id: 'github_app',
-    name: 'GitHub App & OAuth Security',
-    description: 'Handles RS256 JWT installation tokens, OAuth state verification, and Webhook HMAC signatures.',
+    id: 'payments',
+    name: 'Payments Integration',
+    description: 'Integrates with Stripe, PayPal, and Webhooks for processing refunds and secure checkouts.',
     color: '#10b981',
     files: [
-      'backend/services/github_app.py',
-      'webapp/src/app/api/webhooks/github/route.ts',
-      'webapp/src/app/onboarding/page.tsx'
+      'src/payments/stripe.adapter.ts',
+      'src/payments/paypal.adapter.ts',
+      'src/payments/payment.service.ts',
+      'src/payments/webhook.controller.ts'
     ]
   },
   {
-    id: 'database',
-    name: 'Vector Graph Store',
-    description: 'PostgreSQL database with pgvector extension storing repository AST nodes, edges, and embeddings.',
+    id: 'inventory',
+    name: 'Inventory & Shipping',
+    description: 'Controls real-time inventory counts, stock reservation, and courier shipping updates.',
     color: '#f59e0b',
     files: [
-      'backend/database.py',
-      'docker-compose.yml'
+      'src/inventory/inventory.service.ts',
+      'src/inventory/inventory.controller.ts',
+      'src/shipping/shipping.service.ts'
+    ]
+  },
+  {
+    id: 'notifications',
+    name: 'Notification Service',
+    description: 'Dispatches automated invoice updates, receipts, and security alerts via SendGrid.',
+    color: '#ec4899',
+    files: [
+      'src/email/email.service.ts',
+      'src/email/templates/receipt.html',
+      'src/sms/sms.service.ts'
+    ]
+  },
+  {
+    id: 'analytics',
+    name: 'Analytics & Insights',
+    description: 'Streams customer actions, funnel milestones, and checkout conversion rates to Amplitude.',
+    color: '#3b82f6',
+    files: [
+      'src/analytics/analytics.service.ts',
+      'src/analytics/track.ts'
     ]
   }
 ];
 
-export const BRANCHDECK_DEMO_CALLS: { nodes: CallGraphNode[]; edges: CallGraphEdge[] } = {
+export const ECOMMERCE_DEMO_CALLS: { nodes: CallGraphNode[]; edges: CallGraphEdge[] } = {
   nodes: [
-    {
-      id: 'client_ui',
-      label: 'Next.js Frontend',
-      file: 'webapp/src/app/page.tsx',
+    { 
+      id: 'user', 
+      label: 'User Action', 
+      file: 'Client Web/Mobile', 
       type: 'ui',
-      developer: { name: 'Adel Muhammed', role: 'Fullstack Engineer', avatar: 'AM' },
-      note: 'Main interactive visual workspace dashboard.'
+      developer: { name: 'Sarah Chen', role: 'Frontend Lead', avatar: 'SC' },
+      note: 'Web Checkout Page. Triggers createOrder flow on user submit.'
     },
-    {
-      id: 'analyze_proxy',
-      label: 'Analyze Proxy API',
-      file: 'webapp/src/app/api/analyze/route.ts',
+    { 
+      id: 'checkout_api', 
+      label: 'Checkout API', 
+      file: 'src/checkout/checkout.controller.ts', 
       type: 'api',
-      developer: { name: 'Adel Muhammed', role: 'Fullstack Engineer', avatar: 'AM' },
-      note: 'Forwards analysis requests to FastAPI backend with bearer token.'
+      developer: { name: 'Alex River', role: 'API Lead', avatar: 'AR' },
+      note: 'Validates checkout request payload. Secure JWT middleware wrapper.'
     },
-    {
-      id: 'fastapi_main',
-      label: 'FastAPI Core Engine',
-      file: 'backend/main.py',
+    { 
+      id: 'cart_service', 
+      label: 'CartService', 
+      file: 'src/cart/cart.service.ts', 
       type: 'service',
-      developer: { name: 'Adel Muhammed', role: 'Backend Lead', avatar: 'AM' },
-      note: 'Core engine handling analysis, call flows, impact analysis & story generation.'
+      developer: { name: 'Sarah Chen', role: 'Frontend Lead', avatar: 'SC' },
+      note: 'Calculates active items, promotions, and items subtotal values.'
     },
-    {
-      id: 'treesitter_parser',
-      label: 'tree-sitter AST Parser',
-      file: 'backend/parser.py',
+    { 
+      id: 'order_service', 
+      label: 'OrderService', 
+      file: 'src/orders/order.service.ts', 
       type: 'service',
-      developer: { name: 'Adel Muhammed', role: 'Backend Lead', avatar: 'AM' },
-      note: 'Parses TS, JS, Python & Go source code into AST nodes and call edges.'
+      developer: { name: 'Elena Rostova', role: 'Backend Staff', avatar: 'ER' },
+      note: 'Orchestrates order state machine transition to PENDING status.'
+    },
+    { 
+      id: 'inventory_service', 
+      label: 'InventoryService', 
+      file: 'src/inventory/inventory.service.ts', 
+      type: 'service',
+      developer: { name: 'Dave Miller', role: 'Logistics Dev', avatar: 'DM' },
+      note: 'Deducts stock levels and checks items availability thresholds.'
     },
     {
-      id: 'github_app_service',
-      label: 'GitHub App Service',
-      file: 'backend/services/github_app.py',
+      id: 'shipping_service',
+      label: 'ShippingService',
+      file: 'src/shipping/shipping.service.ts',
+      type: 'service',
+      developer: { name: 'Dave Miller', role: 'Logistics Dev', avatar: 'DM' },
+      note: 'Coordinates dispatch window with external logistics API.'
+    },
+    { 
+      id: 'payment_service', 
+      label: 'PaymentService', 
+      file: 'src/payments/payment.service.ts', 
+      type: 'service',
+      developer: { name: 'Marcus Vance', role: 'Payment Specialist', avatar: 'MV' },
+      note: 'Routes checkout request payload to the designated gateway.'
+    },
+    { 
+      id: 'stripe_adapter', 
+      label: 'StripeAdapter', 
+      file: 'src/payments/stripe.adapter.ts', 
       type: 'external',
-      developer: { name: 'Adel Muhammed', role: 'Security Eng', avatar: 'AM' },
-      note: 'RS256 JWT signing for GitHub installation access tokens.'
+      developer: { name: 'Marcus Vance', role: 'Payment Specialist', avatar: 'MV' },
+      note: 'Direct client connection to Stripe API. Handles charge retries.'
     },
-    {
-      id: 'callflow_engine',
-      label: 'Call Flow BFS Engine',
-      file: 'backend/main.py',
+    { 
+      id: 'email_service', 
+      label: 'EmailService', 
+      file: 'src/email/email.service.ts', 
       type: 'service',
-      developer: { name: 'Adel Muhammed', role: 'Fullstack Engineer', avatar: 'AM' },
-      note: 'BFS graph traversal up to 3 hops deep for selected function symbols.'
+      developer: { name: 'Arjun K.', role: 'Senior Engineer', avatar: 'AK' },
+      note: 'Constructs receipts using HTML templates and routes via SendGrid.'
     },
-    {
-      id: 'impact_cte',
-      label: 'Impact CTE Query',
-      file: 'backend/database.py',
+    { 
+      id: 'analytics_service', 
+      label: 'AnalyticsService', 
+      file: 'src/analytics/analytics.service.ts', 
+      type: 'service',
+      developer: { name: 'Sara L.', role: 'Staff Data Eng', avatar: 'SL' },
+      note: 'Fires analytical checkouts events for conversion tracking.'
+    },
+    { 
+      id: 'order_db', 
+      label: 'Orders Database', 
+      file: 'PostgreSQL - Order Table', 
       type: 'db',
-      developer: { name: 'Adel Muhammed', role: 'Backend Lead', avatar: 'AM' },
-      note: 'Recursive PostgreSQL CTE get_downstream_impact()'
+      developer: { name: 'Elena Rostova', role: 'Backend Staff', avatar: 'ER' },
+      note: 'Holds transactional records. Locked during checkout stock allocation.'
     },
-    {
-      id: 'gemini_narrator',
-      label: 'Gemini Story Narrator',
-      file: 'backend/main.py',
-      type: 'external',
-      developer: { name: 'Adel Muhammed', role: 'AI Engineer', avatar: 'AM' },
-      note: 'Generates structured architectural narrative walkthroughs.'
-    },
-    {
-      id: 'postgres_db',
-      label: 'PostgreSQL + pgvector',
-      file: 'backend/database.py',
+    { 
+      id: 'redis_cache', 
+      label: 'Redis Cache', 
+      file: 'Redis Session Store', 
       type: 'db',
-      developer: { name: 'Adel Muhammed', role: 'Backend Lead', avatar: 'AM' },
-      note: 'Stores code_nodes, code_edges, repositories & commits.'
+      developer: { name: 'Arjun K.', role: 'Senior Engineer', avatar: 'AK' },
+      note: 'Cache resets every day at 2AM. Temporary checkout locker.'
     }
   ],
   edges: [
-    { from: 'client_ui', to: 'analyze_proxy', label: 'POST /api/analyze' },
-    { from: 'analyze_proxy', to: 'fastapi_main', label: 'proxy to FastAPI :8000' },
-    { from: 'fastapi_main', to: 'github_app_service', label: 'get_installation_token()' },
-    { from: 'fastapi_main', to: 'treesitter_parser', label: 'parse_repository()' },
-    { from: 'treesitter_parser', to: 'postgres_db', label: 'save code_nodes & code_edges' },
-    { from: 'fastapi_main', to: 'callflow_engine', label: 'get_call_flow()' },
-    { from: 'callflow_engine', to: 'impact_cte', label: 'get_downstream_impact()' },
-    { from: 'fastapi_main', to: 'gemini_narrator', label: 'generate_story()' }
+    { from: 'user', to: 'checkout_api', label: 'clicks "Place Order"' },
+    { from: 'checkout_api', to: 'cart_service', label: 'validateCart()' },
+    { from: 'cart_service', to: 'redis_cache', label: 'getSession()' },
+    { from: 'checkout_api', to: 'order_service', label: 'createOrder()' },
+    { from: 'order_service', to: 'inventory_service', label: 'checkStock()' },
+    { from: 'inventory_service', to: 'shipping_service', label: 'arrangeShipping()' },
+    { from: 'order_service', to: 'payment_service', label: 'processPayment()' },
+    { from: 'payment_service', to: 'stripe_adapter', label: 'charge()' },
+    { from: 'order_service', to: 'order_db', label: 'save()' },
+    { from: 'order_service', to: 'email_service', label: 'sendConfirmation()' },
+    { from: 'order_service', to: 'analytics_service', label: 'trackCheckout()' }
   ]
 };
-
-// Aliases for backwards compatibility
-export const ECOMMERCE_DEMO_FEATURES = BRANCHDECK_DEMO_FEATURES;
-export const ECOMMERCE_DEMO_CALLS = BRANCHDECK_DEMO_CALLS;
 
 export const SOURCE_EXTENSIONS = new Set([
   '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.java', '.cpp', '.c', '.cc', '.h', '.hpp',
