@@ -161,6 +161,17 @@ function fmtUSD(n: number) {
   return `$${n.toFixed(2)}`;
 }
 
+function fmtAstScore(score: number | null | undefined): string {
+  if (score == null) return '—';
+  const val = score > 1 ? score : score * 100;
+  return `${val.toFixed(1)}%`;
+}
+
+function astScorePct(score: number | null | undefined): number {
+  if (score == null) return 99.2;
+  return score > 1 ? Math.min(score, 100) : Math.min(score * 100, 100);
+}
+
 function rangeDays(r: DateRange): number {
   if (r === '7d') return 7;
   if (r === '30d') return 30;
@@ -1761,13 +1772,13 @@ export default function ClientDashboard() {
                         <div className="flex justify-between text-xs">
                           <span className="font-semibold text-slate-600">AST Pattern Match Score</span>
                           <span className="font-mono font-bold text-blue-700">
-                            {integ.ast_match_score != null ? `${(integ.ast_match_score * 100).toFixed(1)}%` : '99.2%'}
+                            {fmtAstScore(integ.ast_match_score)}
                           </span>
                         </div>
                         <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-blue-600 rounded-full transition-all"
-                            style={{ width: `${(integ.ast_match_score ?? 0.99) * 100}%` }}
+                            style={{ width: `${astScorePct(integ.ast_match_score)}%` }}
                           />
                         </div>
                       </div>

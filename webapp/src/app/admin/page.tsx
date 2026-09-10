@@ -537,7 +537,7 @@ export default function AdminDashboardPage() {
                               </td>
                               <td className="p-2.5 font-mono font-bold text-purple-700">
                                 {typeof i.ast_match_score === 'number'
-                                  ? `${(i.ast_match_score * 100).toFixed(1)}%`
+                                  ? `${(i.ast_match_score > 1 ? i.ast_match_score : i.ast_match_score * 100).toFixed(1)}%`
                                   : '96.5%'}
                               </td>
                               <td className="p-2.5">
