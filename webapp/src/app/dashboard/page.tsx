@@ -785,6 +785,16 @@ export default function ClientDashboard() {
     }
   };
 
+  // ── Handle GitHub installation redirect ─────────────────────────────────────
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('installation') === 'success' || params.get('installed') === 'true') {
+      setActiveNav('repos');
+      setConnectSuccess('GitHub App installation verified! Repositories linked successfully.');
+    }
+  }, []);
+
   // ── Demo mode bootstrap: skip auth entirely ─────────────────────────────────
   useEffect(() => {
     if (!isDemoMode) return;

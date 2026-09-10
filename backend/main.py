@@ -2006,7 +2006,7 @@ async def github_app_callback(
     logger.info(f"[GitHub Callback] Successfully linked installation {installation_id} to org '{org_id}' with repos: {synced_repos}")
 
     webapp_url = os.getenv("NEXT_PUBLIC_APP_URL", "http://localhost:3000")
-    return RedirectResponse(url=f"{webapp_url}/onboarding?installation=success")
+    return RedirectResponse(url=f"{webapp_url}/dashboard?installed=true&installation=success")
 
 
 @app.post("/api/github/webhook")
