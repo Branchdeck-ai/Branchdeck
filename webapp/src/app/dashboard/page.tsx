@@ -787,6 +787,54 @@ export default function ClientDashboard() {
 
   // ── Handle GitHub installation redirect ─────────────────────────────────────
   const [githubInstalled, setGithubInstalled] = useState(false);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncedRepos, setSyncedRepos] = useState<Array<{ name: string; full_name: string; html_url: string }>>([]);
+
+  const handleSyncGitHubRepos = async () => {
+    if (!activeOrg) return;
+    setSyncLoading(true);
+    setConnectError(null);
+    setConnectSuccess(null);
+
+    try {
+      const token = session?.access_token || '';
+      const installationId = typeof window !== 'undefined'
+        ? localStorage.getItem('branchdeck_github_installation_id') || undefined
+        : undefined;
+
+      const res = await fetch('/api/github/sync-repos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          organization_id: activeOrg,
+          ...(installationId ? { installation_id: installationId } : {}),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.repos && data.repos.length > 0) {
+        setSyncedRepos(data.repos);
+        setConnectSuccess(
+          data.registered?.length > 0
+            ? `Synced ${data.repos.length} repo(s) from GitHub App. ${data.registered.join(', ')} connected.`
+            : `Found ${data.repos.length} repo(s) from your GitHub App installation: ${data.repos.map((r: any) => r.full_name).join(', ')}`
+        );
+        fetchDashboard(); // refresh the repos list
+      } else {
+        setConnectError(data.error || 'No repositories found. Check that the GitHub App private key is configured server-side.');
+      }
+    } catch (err: any) {
+      setConnectError('Could not sync from GitHub: ' + (err.message || 'Unknown error'));
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -2001,7 +2049,19 @@ export default function ClientDashboard() {
                           <p className="text-xs text-emerald-700 font-medium mt-0.5">Branchdeck has access to your organization repositories.</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="flex items-center gap-3 flex-shrink-0 flex-wrap justify-end">
+                        <button
+                          type="button"
+                          onClick={handleSyncGitHubRepos}
+                          disabled={syncLoading}
+                          className="flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 px-4 py-2 rounded-lg transition-all"
+                        >
+                          {syncLoading ? (
+                            <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Syncing...</>
+                          ) : (
+                            <><RefreshCw className="w-3.5 h-3.5" /> Sync Repositories</>
+                          )}
+                        </button>
                         <a
                           href="https://github.com/organizations/Resummit-ai/settings/installations"
                           target="_blank"
@@ -2140,7 +2200,7 @@ export default function ClientDashboard() {
               {/* ── Connected Repositories Grid ── */}
               <div>
                 <h3 className="text-sm font-bold text-slate-900 mb-3">Active Connected Repositories</h3>
-                {repos.length === 0 ? (
+                {repos.length === 0 && syncedRepos.length === 0 ? (
                   <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-8 text-center space-y-3">
                     <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto">
                       <GitBranch className="w-6 h-6 text-slate-400" />
@@ -2148,12 +2208,25 @@ export default function ClientDashboard() {
                     <div className="space-y-1">
                       <p className="text-sm font-bold text-slate-900">No Connected Repositories Yet</p>
                       <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                        Connect your GitHub repository above with a fine-grained Personal Access Token or GitHub App to enable Branchdeck AST graph monitoring.
+                        {githubInstalled
+                          ? 'GitHub App is installed — click "Sync Repositories" above to pull your repos.'
+                          : 'Connect your GitHub repository above with a fine-grained Personal Access Token or GitHub App to enable Branchdeck AST graph monitoring.'}
                       </p>
+                      {githubInstalled && (
+                        <button
+                          type="button"
+                          onClick={handleSyncGitHubRepos}
+                          disabled={syncLoading}
+                          className="mt-2 inline-flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 px-4 py-2 rounded-lg transition-all"
+                        >
+                          {syncLoading ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Syncing...</> : <><RefreshCw className="w-3.5 h-3.5" /> Sync Repositories</>}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Repos from database */}
                     {repos.map((repo: any) => (
                       <div key={repo.id} className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
                         <div className="flex items-start justify-between">
@@ -2202,6 +2275,46 @@ export default function ClientDashboard() {
                         </div>
                       </div>
                     ))}
+                    {/* Repos detected from GitHub App (before DB save) */}
+                    {syncedRepos
+                      .filter((sr) => !repos.some((r: any) => r.name === sr.name))
+                      .map((repo) => (
+                        <div key={repo.full_name} className="bg-white rounded-2xl border border-blue-100 shadow-xs p-6 space-y-4 relative overflow-hidden">
+                          <div className="absolute top-3 right-3">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">Pending DB Sync</span>
+                          </div>
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center text-blue-600 font-bold">
+                                <GithubIcon className="w-5 h-5" />
+                              </div>
+                              <div>
+                                <h3 className="text-base font-bold text-slate-900">{repo.name}</h3>
+                                <a
+                                  href={repo.html_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-xs text-blue-600 hover:underline font-mono mt-0.5 flex items-center gap-1"
+                                >
+                                  {repo.full_name}
+                                  <ExternalLink className="w-3 h-3" />
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
+                            <div>
+                              <span className="text-slate-400 block text-[10px] uppercase font-bold">Source</span>
+                              <span className="font-semibold text-slate-900">GitHub App</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400 block text-[10px] uppercase font-bold">Status</span>
+                              <span className="font-semibold text-amber-600">Awaiting backend</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    }
                   </div>
                 )}
               </div>
