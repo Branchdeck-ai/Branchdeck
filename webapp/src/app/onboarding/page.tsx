@@ -178,6 +178,7 @@ export default function OnboardingPage() {
   const handleStartGitHubAppInstall = async () => {
     setConnectLoading(true);
     setConnectError(null);
+    const fallbackAppUrl = 'https://github.com/apps/branchdeck-ai';
     try {
       const token = session?.access_token || '';
       const activeOrgId = orgData?.id || orgData?.organization_id || '';
@@ -186,12 +187,13 @@ export default function OnboardingPage() {
         { headers: { Authorization: `Bearer ${token}` } },
       );
       const data = await res.json();
-      if (!res.ok || !data.success || !data.install_url)
-        throw new Error(data.detail || data.error || 'Failed to fetch GitHub App installation URL.');
-      window.location.href = data.install_url;
+      if (data && data.install_url) {
+        window.location.href = data.install_url;
+        return;
+      }
+      window.location.href = fallbackAppUrl;
     } catch (err: any) {
-      setConnectError(err.message || 'Failed to start GitHub App installation flow.');
-      setConnectLoading(false);
+      window.location.href = fallbackAppUrl;
     }
   };
 
