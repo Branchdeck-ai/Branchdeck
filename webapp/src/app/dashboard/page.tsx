@@ -309,7 +309,7 @@ function CostChart({ daily }: { daily: DailyBucket[] }) {
   const [tooltip, setTooltip] = useState<{ x: number; y: number; day: string; cost: number; tokens: number } | null>(null);
 
   if (!daily.length) {
-    return <div className="h-40 flex items-center justify-center text-sm text-slate-400">No data in range</div>;
+    return <div className="h-28 flex items-center justify-center text-xs text-slate-400 font-medium bg-slate-50/50 rounded-xl border border-dashed border-slate-200">No data in range</div>;
   }
 
   const W = 600, H = 120, PAD = 8;
@@ -327,7 +327,7 @@ function CostChart({ daily }: { daily: DailyBucket[] }) {
     <div className="relative" onMouseLeave={() => setTooltip(null)}>
       <svg
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full h-40"
+        className="w-full h-28"
         preserveAspectRatio="none"
         onMouseMove={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
@@ -2456,7 +2456,7 @@ export default function ClientDashboard() {
                     </button>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 grid-flow-dense">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start grid-flow-dense">
                     {activeWidgetIds.map((id) => {
                       const isDragging = draggedWidgetId === id;
                       const isDropTarget = dropTargetWidgetId === id;
