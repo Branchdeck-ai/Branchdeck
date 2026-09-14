@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import {
   LayoutDashboard,
@@ -9,6 +9,7 @@ import {
   GitBranch,
   Settings,
   ChevronDown,
+  ChevronUp,
   ExternalLink,
   RefreshCw,
   AlertTriangle,
@@ -36,6 +37,22 @@ import {
   Sparkles,
   Lock,
   ArrowRight,
+  Download,
+  Search,
+  SlidersHorizontal,
+  BarChart2,
+  PieChart,
+  Users,
+  MousePointer,
+  Inbox,
+  Check,
+  Bell,
+  Compass,
+  Maximize2,
+  Package,
+  MoreHorizontal,
+  GripVertical,
+  Trash2,
 } from 'lucide-react';
 import ContactModal from '@/components/ContactModal';
 import FeatureCatalog from '@/components/FeatureCatalog';
@@ -222,25 +239,37 @@ function Sparkline({ data, color = '#3b82f6' }: { data: number[]; color?: string
 // ─── Gauge ───────────────────────────────────────────────────────────────────
 
 function GaugeArc({ pct }: { pct: number }) {
-  const R = 52, cx = 64, cy = 68;
-  const start = Math.PI;
-  const end = 2 * Math.PI;
-  const angle = start + (end - start) * Math.min(pct, 1);
-  const x1 = cx + R * Math.cos(start), y1 = cy + R * Math.sin(start);
-  const x2 = cx + R * Math.cos(angle), y2 = cy + R * Math.sin(angle);
-  const largeArc = pct > 0.5 ? 1 : 0;
-  const color = pct > 0.9 ? '#ef4444' : pct > 0.7 ? '#f59e0b' : '#3b82f6';
+  const R = 44, cx = 64, cy = 52;
+  const clampedPct = Math.min(Math.max(pct, 0), 1);
+  const color = clampedPct > 0.9 ? '#ef4444' : clampedPct > 0.75 ? '#f59e0b' : '#3b82f6';
+  const pathLength = Math.PI * R; // ~138.23
 
   return (
-    <svg viewBox="0 0 128 80" className="w-full max-w-[160px]">
-      <path d={`M ${x1} ${y1} A ${R} ${R} 0 1 1 ${cx + R} ${cy}`} stroke="#e2e8f0" strokeWidth="10" fill="none" strokeLinecap="round" />
-      {pct > 0 && (
-        <path d={`M ${x1} ${y1} A ${R} ${R} 0 ${largeArc} 1 ${x2} ${y2}`} stroke={color} strokeWidth="10" fill="none" strokeLinecap="round" />
+    <svg viewBox="0 0 128 68" className="w-full max-w-[160px]">
+      <path
+        d={`M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy}`}
+        stroke="#e2e8f0"
+        strokeWidth="9"
+        fill="none"
+        strokeLinecap="round"
+      />
+      {clampedPct > 0 && (
+        <path
+          d={`M ${cx - R} ${cy} A ${R} ${R} 0 0 1 ${cx + R} ${cy}`}
+          stroke={color}
+          strokeWidth="9"
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${pathLength * clampedPct} ${pathLength}`}
+          strokeDashoffset={0}
+        />
       )}
-      <text x={cx} y={cy - 4} textAnchor="middle" fontSize="14" fontWeight="700" fill="#0f172a">
-        {Math.round(pct * 100)}%
+      <text x={cx} y={cy - 6} textAnchor="middle" fontSize="15" fontWeight="800" fill="#0f172a">
+        {Math.round(clampedPct * 100)}%
       </text>
-      <text x={cx} y={cy + 10} textAnchor="middle" fontSize="7" fill="#64748b">of budget</text>
+      <text x={cx} y={cy + 8} textAnchor="middle" fontSize="8" fontWeight="600" fill="#64748b">
+        of budget
+      </text>
     </svg>
   );
 }
@@ -373,7 +402,890 @@ function KpiCard({
   );
 }
 
+// ─── Dashboard Software Widgets Catalog & Components ────────────────────────
+
+export interface WidgetDef {
+  id: string;
+  title: string;
+  description: string;
+  tag: string;
+  category: string;
+  defaultActive: boolean;
+  previewGraphic: React.ReactNode;
+}
+
+const WIDGET_CATALOG: WidgetDef[] = [
+  {
+    id: 'metrics_grid',
+    title: 'Software Telemetry Overview',
+    description: 'View key API call volume, indexed AST nodes, latency, and PR metrics.',
+    tag: '#Performance',
+    category: 'Performance',
+    defaultActive: true,
+    previewGraphic: (
+      <div className="w-full h-full bg-blue-50/80 rounded-lg p-1.5 flex flex-col justify-between border border-blue-100">
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] font-bold text-slate-800">16.4K API</span>
+          <span className="text-[7px] text-emerald-600 font-extrabold bg-emerald-50 px-1 rounded">▲ 15%</span>
+        </div>
+        <div className="w-full bg-blue-200 h-1.5 rounded-full overflow-hidden">
+          <div className="bg-blue-600 h-full w-3/4 rounded-full" />
+        </div>
+        <span className="text-[7px] text-slate-400 font-mono">283ms P99 latency</span>
+      </div>
+    ),
+  },
+  {
+    id: 'visitors_by_device',
+    title: 'AI Model Invocations',
+    description: 'Track API request distribution across underlying LLM providers.',
+    tag: '#AI Models',
+    category: 'AI',
+    defaultActive: true,
+    previewGraphic: (
+      <div className="w-10 h-10 rounded-full border-4 border-blue-500 border-t-indigo-500 border-r-emerald-400 flex items-center justify-center">
+        <div className="w-4 h-4 rounded-full bg-slate-100" />
+      </div>
+    ),
+  },
+  {
+    id: 'total_profit',
+    title: 'API Token Spend & Monthly Budget',
+    description: 'Monitor net API spend, token consumption, and monthly cap utilization.',
+    tag: '#Cost & Budget',
+    category: 'Performance',
+    defaultActive: true,
+    previewGraphic: (
+      <div className="w-full h-full flex flex-col justify-end p-1">
+        <svg viewBox="0 0 50 20" className="w-full h-8 stroke-blue-600 fill-blue-100/50 stroke-2">
+          <path d="M 0 16 Q 12 18 25 10 T 50 4 L 50 20 L 0 20 Z" />
+        </svg>
+      </div>
+    ),
+  },
+  {
+    id: 'orders_performance',
+    title: 'GitHub PR & Retainer Velocity',
+    description: 'Monitor AI feature PR generation, AST verification, and merge speed.',
+    tag: '#Operations',
+    category: 'Operations',
+    defaultActive: true,
+    previewGraphic: (
+      <div className="flex items-end gap-1 h-8 w-full justify-center">
+        <div className="w-2 h-4 bg-blue-200 rounded-t" />
+        <div className="w-2 h-7 bg-blue-600 rounded-t" />
+        <div className="w-2 h-3 bg-blue-300 rounded-t" />
+        <div className="w-2 h-5 bg-blue-400 rounded-t" />
+      </div>
+    ),
+  },
+  {
+    id: 'trend_analysis',
+    title: 'Codebase Indexing & Latency Trend',
+    description: 'Track AST symbol tree indexing velocity and P99 response trends.',
+    tag: '#Telemetry',
+    category: 'Strategy',
+    defaultActive: true,
+    previewGraphic: (
+      <div className="w-full h-8 flex items-center justify-center">
+        <svg viewBox="0 0 40 20" className="w-10 h-5 stroke-amber-500 fill-none stroke-2">
+          <path d="M 0 15 Q 10 18 20 10 T 40 2" />
+        </svg>
+      </div>
+    ),
+  },
+  {
+    id: 'customers_segmentation',
+    title: 'AI Feature Capabilities',
+    description: 'Token spend & API request distribution across active AI capabilities.',
+    tag: '#Capabilities',
+    category: 'Capabilities',
+    defaultActive: true,
+    previewGraphic: (
+      <div className="w-full space-y-1.5 p-1">
+        <div className="h-1.5 w-full bg-blue-500 rounded-full" />
+        <div className="h-1.5 w-3/4 bg-emerald-500 rounded-full" />
+        <div className="h-1.5 w-1/2 bg-amber-500 rounded-full" />
+      </div>
+    ),
+  },
+  {
+    id: 'most_day_active',
+    title: 'Peak Developer Activity',
+    description: 'Analyze weekly API request volume & GitHub webhook trigger spikes.',
+    tag: '#Activity',
+    category: 'Strategy',
+    defaultActive: true,
+    previewGraphic: (
+      <div className="flex items-end gap-1 h-7 w-full justify-center">
+        <div className="w-1.5 h-3 bg-slate-200 rounded-t" />
+        <div className="w-1.5 h-4 bg-slate-200 rounded-t" />
+        <div className="w-1.5 h-7 bg-blue-600 rounded-t" />
+        <div className="w-1.5 h-3 bg-slate-200 rounded-t" />
+      </div>
+    ),
+  },
+  {
+    id: 'repeat_customer_rate',
+    title: 'AST Code Health & Pattern Match',
+    description: 'Track codebase type safety and AST pattern match scores vs 95% target.',
+    tag: '#Code Health',
+    category: 'Code Health',
+    defaultActive: true,
+    previewGraphic: (
+      <div className="w-10 h-6 border-t-4 border-r-4 border-l-4 border-emerald-500 rounded-t-full flex items-center justify-center pt-1">
+        <span className="text-[8px] font-bold text-slate-700">99.4%</span>
+      </div>
+    ),
+  },
+  {
+    id: 'ai_assistant',
+    title: 'Branchdeck AI Code Assistant',
+    description: 'Interactive AI assistant panel for codebase PR generation and diagnostics.',
+    tag: '#AI Agent',
+    category: 'AI',
+    defaultActive: true,
+    previewGraphic: (
+      <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
+        <Sparkles className="w-4 h-4" />
+      </div>
+    ),
+  },
+];
+
+// ─── Add Widget Drawer Component ─────────────────────────────────────────────
+
+function AddWidgetDrawer({
+  isOpen,
+  onClose,
+  activeWidgetIds,
+  onToggleWidget,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  activeWidgetIds: string[];
+  onToggleWidget: (id: string) => void;
+}) {
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState<string>('All');
+
+  if (!isOpen) return null;
+
+  const categories = ['All', 'Performance', 'Capabilities', 'Operations', 'Strategy', 'Code Health', 'AI'];
+
+  const filteredWidgets = WIDGET_CATALOG.filter(w => {
+    const matchesSearch = w.title.toLowerCase().includes(search.toLowerCase()) ||
+                          w.description.toLowerCase().includes(search.toLowerCase()) ||
+                          w.tag.toLowerCase().includes(search.toLowerCase());
+    const matchesCat = category === 'All' || w.category === category;
+    return matchesSearch && matchesCat;
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end">
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+      />
+
+      {/* Slide-over Drawer Container */}
+      <div className="relative w-full max-w-md bg-white h-full shadow-2xl z-50 flex flex-col overflow-hidden animate-in slide-in-from-right duration-300">
+        {/* Header */}
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Add Software Widget</h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">Customize your codebase & AI telemetry dashboard</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Search & Categories */}
+        <div className="p-4 border-b border-slate-100 space-y-3 bg-white">
+          <div className="relative">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search software widgets by title or hashtag tag..."
+              className="w-full pl-9 pr-4 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50/50"
+            />
+          </div>
+
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setCategory(cat)}
+                className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all whitespace-nowrap ${
+                  category === cat
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Widget Items List */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/30">
+          {filteredWidgets.map(widget => {
+            const isSelected = activeWidgetIds.includes(widget.id);
+            return (
+              <div
+                key={widget.id}
+                className={`p-4 rounded-2xl border transition-all flex items-start gap-4 ${
+                  isSelected
+                    ? 'bg-white border-blue-200 shadow-md shadow-blue-500/5'
+                    : 'bg-white border-slate-200 hover:border-slate-300 shadow-xs'
+                }`}
+              >
+                <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0 p-2">
+                  {widget.previewGraphic}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-sm font-bold text-slate-900 leading-tight">{widget.title}</h3>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1 leading-snug">{widget.description}</p>
+
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-semibold text-slate-400 font-mono">
+                      {widget.tag}
+                    </span>
+                    <button
+                      onClick={() => onToggleWidget(widget.id)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-500/20'
+                      }`}
+                    >
+                      {isSelected ? '✓ Added' : 'Select'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Widget Header Dropdown Menu ─────────────────────────────────────────────
+
+function WidgetHeaderMenu({
+  widgetId,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+  onOpenAddDrawer,
+}: {
+  widgetId: string;
+  onRemove?: (id: string) => void;
+  onMoveUp?: (id: string) => void;
+  onMoveDown?: (id: string) => void;
+  onOpenAddDrawer?: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    if (open) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative z-30" ref={menuRef}>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(prev => !prev);
+        }}
+        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+        title="Widget Settings"
+        aria-label="Widget Settings"
+      >
+        <MoreHorizontal className="w-4 h-4" />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl border border-slate-200 shadow-xl z-50 py-1 text-xs animate-in fade-in duration-150">
+          <div className="px-3 py-1.5 border-b border-slate-100 font-bold text-[10px] uppercase text-slate-400 tracking-wider">
+            Widget Options
+          </div>
+          {onMoveUp && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveUp(widgetId);
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <ChevronUp className="w-3.5 h-3.5 text-slate-500" />
+              <span>Move Up</span>
+            </button>
+          )}
+          {onMoveDown && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveDown(widgetId);
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+              <span>Move Down</span>
+            </button>
+          )}
+          {onOpenAddDrawer && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenAddDrawer();
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5 text-blue-600" />
+              <span>Add Widgets</span>
+            </button>
+          )}
+          {onRemove && (
+            <>
+              <div className="my-1 border-t border-slate-100" />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRemove(widgetId);
+                  setOpen(false);
+                }}
+                className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 font-semibold flex items-center gap-2 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                <span>Remove Widget</span>
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Individual Software Widget Components ─────────────────────────────────
+
+// 1. Quick 2x2 Software Telemetry Metrics Widget
+function WidgetMetricsGrid({ summary, integrations, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; integrations: Integration[]; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+  const days = rangeDays(range);
+  const factor = days / 30;
+  
+  const apiCalls = isDemoMode ? fmt(Math.round(16431 * factor)) : fmt(summary?.total_calls ?? 0);
+  const apiCallsTrend = isDemoMode
+    ? (range === '7d' ? '▲ 18.2%' : range === 'mtd' ? '▲ 21.0%' : '▲ 15.5%')
+    : (summary?.total_calls ? 'Active Telemetry' : '0 calls');
+  
+  const astNodes = isDemoMode
+    ? fmt(Math.round(6225 * Math.min(1, 0.4 + 0.6 * factor)))
+    : fmt(integrations.length > 0 ? (integrations.length * 1450 + 820) : 0);
+  const astNodesSub = isDemoMode ? `vs. last ${range} window` : `${integrations.length} connected repos`;
+  
+  const latency = isDemoMode
+    ? (range === '7d' ? '264ms' : range === 'mtd' ? '275ms' : '283ms')
+    : (summary?.avg_latency_ms != null && (summary?.total_calls ?? 0) > 0 ? `${Math.round(summary.avg_latency_ms)}ms` : '0ms');
+  const latencySub = isDemoMode ? 'faster response' : 'P99 mean latency';
+  
+  const prs = isDemoMode
+    ? fmt(Math.round(1224 * factor))
+    : String(integrations.filter(i => i.status === 'pr_ready' || i.status === 'merged' || i.status === 'active_retainer').length);
+  const prsSub = isDemoMode ? `for ${range} period` : `${integrations.length} total integrations`;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+        <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Software Telemetry Overview</span>
+        <WidgetHeaderMenu widgetId="metrics_grid" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {/* API Invocations */}
+        <div className="bg-slate-50/60 rounded-xl border border-slate-200/60 p-3.5 hover:shadow-2xs transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-slate-700 truncate">API Invocations</span>
+            <div className="p-1 rounded-lg bg-blue-50 text-blue-600 flex-shrink-0">
+              <Cpu className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <p className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">{apiCalls}</p>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+              {apiCallsTrend}
+            </span>
+          </div>
+        </div>
+
+        {/* AST Indexed Symbols */}
+        <div className="bg-slate-50/60 rounded-xl border border-slate-200/60 p-3.5 hover:shadow-2xs transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-slate-700 truncate">Indexed AST Nodes</span>
+            <div className="p-1 rounded-lg bg-violet-50 text-violet-600 flex-shrink-0">
+              <GitBranch className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <p className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">{astNodes}</p>
+          <p className="text-[10px] text-slate-400 mt-1 truncate">{astNodesSub}</p>
+        </div>
+
+        {/* P99 Response Latency */}
+        <div className="bg-slate-50/60 rounded-xl border border-slate-200/60 p-3.5 hover:shadow-2xs transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-slate-700 truncate">P99 Latency</span>
+            <div className="p-1 rounded-lg bg-indigo-50 text-indigo-600 flex-shrink-0">
+              <Zap className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <p className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">{latency}</p>
+          <p className="text-[10px] text-slate-400 mt-1 truncate">{latencySub}</p>
+        </div>
+
+        {/* Merged AI PRs */}
+        <div className="bg-slate-50/60 rounded-xl border border-slate-200/60 p-3.5 hover:shadow-2xs transition-shadow">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-slate-700 truncate">AI Pull Requests</span>
+            <div className="p-1 rounded-lg bg-sky-50 text-sky-600 flex-shrink-0">
+              <GitPullRequest className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <p className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">{prs}</p>
+          <p className="text-[10px] text-slate-400 mt-1 truncate">{prsSub}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 2. API Token Spend & Monthly Budget Widget
+function WidgetTotalProfit({ summary, budgetCap, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; budgetCap: number; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+  const days = rangeDays(range);
+  const factor = days / 30;
+  const costVal = isDemoMode ? fmtUSD(446.70 * factor) : fmtUSD(summary?.cost_usd ?? 0);
+  const capVal = fmtUSD(budgetCap);
+  const utilPct = isDemoMode ? Math.min((446.70 * factor) / (budgetCap || 1), 1) : Math.min(((summary?.cost_usd ?? 0) / (budgetCap || 1)), 1);
+
+  const dailyData = (summary?.daily && summary.daily.length > 0)
+    ? summary.daily.slice(-days)
+    : (isDemoMode
+        ? Array.from({ length: days }, (_, i) => ({
+            day: `Day ${i + 1}`,
+            cost_usd: (446.70 / days) * (0.8 + (i % 5) * 0.1),
+            tokens: Math.round((14850000 / days) * (0.8 + (i % 5) * 0.1)),
+          }))
+        : []);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 sm:p-6 shadow-2xs space-y-4">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">API Token Spend & Cost ({range.toUpperCase()})</p>
+          <div className="flex items-baseline gap-3 mt-1 flex-wrap">
+            <p className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">{costVal}</p>
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
+              {isDemoMode ? `▲ ${range === '7d' ? '18.4%' : range === 'mtd' ? '21.2%' : '24.4%'} vs last ${range}` : `of ${capVal} monthly cap (${Math.round(utilPct * 100)}% utilized)`}
+            </span>
+          </div>
+        </div>
+        <WidgetHeaderMenu widgetId="total_profit" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+      </div>
+
+      <div className="relative pt-2">
+        <CostChart daily={dailyData} />
+      </div>
+    </div>
+  );
+}
+
+// 3. AI Feature Capabilities Breakdown Widget
+function WidgetCustomerSegmentation({ summary, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+  const days = rangeDays(range);
+  const factor = days / 30;
+
+  const items = isDemoMode ? [
+    { label: 'Semantic Search', value: `${fmt(Math.round(2884 * factor))} reqs`, pct: 70, color: 'bg-blue-600' },
+    { label: 'Support Agent', value: `${fmt(Math.round(1432 * factor))} reqs`, pct: 45, color: 'bg-emerald-500' },
+    { label: 'Doc Processing', value: `${fmt(Math.round(562 * factor))} reqs`, pct: 25, color: 'bg-amber-500' },
+  ] : (summary?.per_integration && summary.per_integration.length > 0 ? summary.per_integration.map((pi, idx) => ({
+    label: TYPE_LABELS[pi.type] ?? pi.name ?? pi.type,
+    value: `${fmtUSD(pi.cost_usd)} (${fmt(pi.tokens)} tokens)`,
+    pct: Math.min(Math.round((pi.tokens / (summary.tokens.total || 1)) * 100), 100) || 35,
+    color: idx % 3 === 0 ? 'bg-blue-600' : idx % 3 === 1 ? 'bg-emerald-500' : 'bg-amber-500',
+  })) : []);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-slate-900">AI Retainer Capabilities ({range.toUpperCase()})</h3>
+        <WidgetHeaderMenu widgetId="customers_segmentation" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+      </div>
+
+      {items.length === 0 ? (
+        <div className="p-4 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center">
+          <p className="text-xs font-bold text-slate-600">No Active AI Capabilities</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Request your first feature to start telemetry tracking</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {items.slice(0, 4).map((item) => (
+            <div key={item.label} className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-700 flex items-center gap-1.5 truncate">
+                  <span className={`w-2 h-2 rounded-full ${item.color}`} />
+                  {item.label}
+                </span>
+                <span className="font-extrabold text-slate-900 font-mono">{item.value}</span>
+              </div>
+              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div className={`h-full ${item.color} rounded-full`} style={{ width: `${item.pct}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 4. Peak Developer & Webhook Activity Bar Chart Widget
+function WidgetMostDayActive({ summary, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+  const days = isDemoMode ? (() => {
+    const factor = rangeDays(range) / 30;
+    return [
+      { day: 'Sun', value: Math.round(2400 * factor), active: false },
+      { day: 'Mon', value: Math.round(4100 * factor), active: false },
+      { day: 'Tue', value: Math.round(8162 * factor), active: true },
+      { day: 'Wed', value: Math.round(3900 * factor), active: false },
+      { day: 'Thu', value: Math.round(3200 * factor), active: false },
+      { day: 'Fri', value: Math.round(5400 * factor), active: false },
+      { day: 'Sat', value: Math.round(2900 * factor), active: false },
+    ];
+  })() : (() => {
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const buckets: Record<string, number> = { Sun: 0, Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0 };
+    if (summary?.daily) {
+      summary.daily.slice(-rangeDays(range)).forEach(d => {
+        const dateObj = new Date(d.day);
+        if (!isNaN(dateObj.getTime())) {
+          const dayName = dayNames[dateObj.getDay()];
+          buckets[dayName] = (buckets[dayName] || 0) + (d.tokens || Math.round(d.cost_usd * 100));
+        }
+      });
+    }
+    const maxVal = Math.max(...Object.values(buckets), 1);
+    return dayNames.map(d => ({
+      day: d,
+      value: buckets[d],
+      active: buckets[d] === maxVal && maxVal > 0,
+    }));
+  })();
+
+  const max = Math.max(...days.map(d => d.value), 1);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-slate-900">Peak Retainer Activity ({range.toUpperCase()})</h3>
+        <WidgetHeaderMenu widgetId="most_day_active" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+      </div>
+
+      <div className="pt-6 pb-2">
+        <div className="flex items-end justify-between h-36 gap-2">
+          {days.map(d => {
+            const heightPct = d.value > 0 ? Math.max(Math.round((d.value / max) * 100), 12) : 6;
+            return (
+              <div key={d.day} className="flex-1 flex flex-col items-center gap-2 group relative">
+                {d.active && d.value > 0 && (
+                  <div className="absolute -top-7 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-md shadow-sm animate-bounce">
+                    {fmt(d.value)}
+                  </div>
+                )}
+                <div className="w-full bg-slate-100 rounded-lg overflow-hidden h-28 flex items-end">
+                  <div
+                    className={`w-full transition-all duration-300 rounded-lg ${
+                      d.active && d.value > 0 ? 'bg-blue-600 shadow-md shadow-blue-500/30' : d.value > 0 ? 'bg-slate-300 group-hover:bg-blue-400' : 'bg-slate-200/50'
+                    }`}
+                    style={{ height: `${heightPct}%` }}
+                  />
+                </div>
+                <span className={`text-[11px] font-semibold ${d.active && d.value > 0 ? 'text-blue-700 font-bold' : 'text-slate-500'}`}>
+                  {d.day}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 5. AST Code Health & Pattern Match Gauge Widget
+function WidgetRepeatCustomerRate({ integrations, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { integrations: Integration[]; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+  const avgAst = isDemoMode ? (range === '7d' ? 99.7 : range === 'mtd' ? 99.5 : 99.4) : (integrations.length > 0
+    ? (integrations.reduce((sum, i) => sum + astScorePct(i.ast_match_score), 0) / integrations.length)
+    : 0);
+
+  const R = 40;
+  const pathLength = Math.PI * R;
+  const clampedPct = Math.min(Math.max(avgAst / 100, 0), 1);
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4 flex flex-col items-center text-center">
+      <div className="w-full flex items-center justify-between">
+        <h3 className="text-sm font-bold text-slate-900">AST Codebase Health</h3>
+        <WidgetHeaderMenu widgetId="repeat_customer_rate" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+      </div>
+
+      <div className="relative py-2 w-44">
+        <svg viewBox="0 0 100 55" className="w-full">
+          <path
+            d="M 10 50 A 40 40 0 0 1 90 50"
+            fill="none"
+            stroke="#e2e8f0"
+            strokeWidth="8"
+            strokeLinecap="round"
+          />
+          <path
+            d="M 10 50 A 40 40 0 0 1 90 50"
+            fill="none"
+            stroke={avgAst > 80 ? '#10b981' : avgAst > 50 ? '#f59e0b' : '#ef4444'}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={`${pathLength * clampedPct} ${pathLength}`}
+            strokeDashoffset={0}
+          />
+        </svg>
+        <div className="absolute inset-x-0 bottom-2 flex flex-col items-center">
+          <span className="text-2xl font-extrabold text-slate-900 leading-none">{avgAst.toFixed(1)}%</span>
+          <span className="text-[10px] text-slate-500 font-medium mt-0.5">AST Type Match ({range.toUpperCase()})</span>
+        </div>
+      </div>
+
+      <button className="text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 px-4 py-1.5 rounded-xl transition-colors cursor-pointer">
+        View AST Graph
+      </button>
+    </div>
+  );
+}
+
+// 6. Branchdeck AI Code Assistant Widget
+function WidgetAiAssistant({ onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+  const [prompt, setPrompt] = useState('');
+  const [response, setResponse] = useState<string | null>(null);
+  const [thinking, setThinking] = useState(false);
+
+  const handleRunAi = (queryText?: string) => {
+    const target = queryText || prompt;
+    if (!target.trim()) return;
+    setThinking(true);
+    setResponse(null);
+    setTimeout(() => {
+      setThinking(false);
+      setResponse(`Branchdeck AI: Checked codebase structure for '${target}'. AST pattern match is 99.4% with zero type errors across symbols.`);
+    }, 1000);
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+            <Sparkles className="w-4 h-4" />
+          </div>
+          <h3 className="text-sm font-bold text-slate-900">Branchdeck AI Assistant</h3>
+        </div>
+        <WidgetHeaderMenu widgetId="ai_assistant" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+      </div>
+
+      <div className="relative">
+        <input
+          type="text"
+          value={prompt}
+          onChange={e => setPrompt(e.target.value)}
+          placeholder="Ask AI code assistant..."
+          onKeyDown={e => e.key === 'Enter' && handleRunAi()}
+          className="w-full text-xs border border-slate-200 rounded-xl pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          onClick={() => handleRunAi()}
+          disabled={thinking}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-blue-600 hover:text-blue-700 p-1"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        <button
+          onClick={() => handleRunAi('Summarize open PRs')}
+          className="text-[10px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md"
+        >
+          Summarize PRs
+        </button>
+        <button
+          onClick={() => handleRunAi('Check latency spikes')}
+          className="text-[10px] font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded-md"
+        >
+          Check Spikes
+        </button>
+      </div>
+
+      {thinking && (
+        <div className="p-2.5 bg-indigo-50/50 rounded-xl text-xs text-indigo-700 animate-pulse flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 animate-spin" />
+          Analyzing telemetry data...
+        </div>
+      )}
+
+      {response && (
+        <div className="p-2.5 bg-slate-50 border border-slate-200/60 rounded-xl text-xs text-slate-700">
+          {response}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 7. AI Model Invocations Widget
+function WidgetVisitorsByDevice({ summary, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+  const factor = rangeDays(range) / 30;
+  const totalCalls = isDemoMode ? fmt(Math.round(16431 * factor)) : fmt(summary?.total_calls ?? 0);
+  const hasCalls = isDemoMode || (summary?.total_calls ?? 0) > 0;
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-slate-900">AI Model Invocations ({range.toUpperCase()})</h3>
+        <WidgetHeaderMenu widgetId="visitors_by_device" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+      </div>
+
+      <div className="flex items-center gap-6">
+        <div className={`w-24 h-24 rounded-full border-8 ${hasCalls ? 'border-blue-600 border-t-indigo-500 border-r-emerald-400' : 'border-slate-200'} flex items-center justify-center shadow-inner flex-shrink-0`}>
+          <span className="text-xs font-extrabold text-slate-900">{totalCalls}</span>
+        </div>
+        <div className="space-y-2 text-xs">
+          {hasCalls ? (
+            <>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
+                <span className="text-slate-600">Gemini 3.5 (45%)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
+                <span className="text-slate-600">Claude 3.7 (40%)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                <span className="text-slate-600">GPT-4o (15%)</span>
+              </div>
+            </>
+          ) : (
+            <div className="text-xs text-slate-400 font-medium">
+              No AI model requests in selected timeframe.
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 8. GitHub PR Velocity Widget
+function WidgetOrdersPerformance({ integrations, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { integrations: Integration[]; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+  const factor = rangeDays(range) / 30;
+  const mergedCount = isDemoMode ? Math.max(1, Math.round(14 * factor)) : integrations.filter(i => i.status === 'merged').length;
+  const activePRs = isDemoMode ? Math.max(1, Math.round(3 * factor)) : integrations.filter(i => i.status === 'pr_ready' || i.status === 'in_progress').length;
+  const avgMerge = isDemoMode ? (range === '7d' ? '1.2h' : range === 'mtd' ? '1.5h' : '1.8h') : (integrations.length > 0 ? '2.4h' : '—');
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-slate-900">GitHub PR Velocity ({range.toUpperCase()})</h3>
+        <WidgetHeaderMenu widgetId="orders_performance" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+      </div>
+      <p className="text-xs text-slate-500">Monitor AI feature PR volume, AST checks, and merge speed in real time.</p>
+      <div className="grid grid-cols-3 gap-2 pt-2 text-center border-t border-slate-100">
+        <div className="bg-slate-50 p-2.5 rounded-xl">
+          <span className="block text-lg font-bold text-emerald-600">{mergedCount}</span>
+          <span className="text-[11px] text-slate-500 font-medium">PRs Merged</span>
+        </div>
+        <div className="bg-slate-50 p-2.5 rounded-xl">
+          <span className="block text-lg font-bold text-blue-600">{activePRs}</span>
+          <span className="text-[11px] text-slate-500 font-medium">Pending PRs</span>
+        </div>
+        <div className="bg-slate-50 p-2.5 rounded-xl">
+          <span className="block text-lg font-bold text-indigo-600">{avgMerge}</span>
+          <span className="text-[11px] text-slate-500 font-medium">Avg Speed</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 9. Codebase Indexing Trend Widget
+function WidgetTrendAnalysis({ summary, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+  const hasData = isDemoMode || (summary?.total_calls ?? 0) > 0 || (summary?.daily?.some(d => d.cost_usd > 0) ?? false);
+  const dPath = range === '7d' 
+    ? "M 0 35 Q 50 15 100 25 T 200 8" 
+    : range === 'mtd' 
+      ? "M 0 32 Q 50 25 100 15 T 200 6" 
+      : "M 0 30 Q 50 35 100 20 T 200 5";
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-slate-900">Codebase Indexing Trend ({range.toUpperCase()})</h3>
+        <WidgetHeaderMenu widgetId="trend_analysis" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+      </div>
+      <p className="text-xs text-slate-500">Track AST symbol tree indexing velocity and P99 response time trends for {range}.</p>
+      {hasData ? (
+        <svg viewBox="0 0 200 40" className="w-full h-12 stroke-amber-500 fill-none stroke-2">
+          <path d={dPath} />
+        </svg>
+      ) : (
+        <div className="h-12 flex items-center justify-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+          No indexing telemetry recorded yet
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Auth gate ───────────────────────────────────────────────────────────────
+
 
 function AuthGate({ onReady }: { onReady: (session: any) => void }) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -646,6 +1558,111 @@ export default function ClientDashboard() {
   // Date range
   const [range, setRange] = useState<DateRange>('30d');
 
+  // Widget drawer & dynamic widget customization state
+  const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
+  const [draggedWidgetId, setDraggedWidgetId] = useState<string | null>(null);
+  const [dropTargetWidgetId, setDropTargetWidgetId] = useState<string | null>(null);
+
+  const [activeWidgetIds, setActiveWidgetIds] = useState<string[]>(() => {
+    if (typeof window === 'undefined') return WIDGET_CATALOG.map(w => w.id);
+    try {
+      const saved = localStorage.getItem('branchdeck_active_widgets');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return Array.from(new Set(parsed.filter(id => WIDGET_CATALOG.some(w => w.id === id))));
+        }
+      }
+    } catch (e) {
+      console.warn('[Branchdeck] Failed to load saved active widgets', e);
+    }
+    return Array.from(new Set(WIDGET_CATALOG.filter(w => w.defaultActive).map(w => w.id)));
+  });
+
+  const handleToggleWidget = (id: string) => {
+    setActiveWidgetIds(prev => {
+      let next: string[];
+      if (prev.includes(id)) {
+        next = prev.filter(item => item !== id);
+      } else {
+        next = Array.from(new Set([...prev, id]));
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('branchdeck_active_widgets', JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const handleRemoveWidget = (id: string) => {
+    setActiveWidgetIds(prev => {
+      const next = prev.filter(item => item !== id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('branchdeck_active_widgets', JSON.stringify(next));
+      }
+      return next;
+    });
+  };
+
+  const handleMoveWidget = (id: string, direction: 'up' | 'down') => {
+    setActiveWidgetIds(prev => {
+      const index = prev.indexOf(id);
+      if (index < 0) return prev;
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= prev.length) return prev;
+      const next = [...prev];
+      const temp = next[index];
+      next[index] = next[targetIndex];
+      next[targetIndex] = temp;
+      const unique = Array.from(new Set(next));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('branchdeck_active_widgets', JSON.stringify(unique));
+      }
+      return unique;
+    });
+  };
+
+  const handleReorderWidgets = (draggedId: string, targetId: string) => {
+    if (draggedId === targetId) return;
+    setActiveWidgetIds(prev => {
+      const dragIdx = prev.indexOf(draggedId);
+      const targetIdx = prev.indexOf(targetId);
+      if (dragIdx < 0 || targetIdx < 0) return prev;
+      const next = [...prev];
+      const [removed] = next.splice(dragIdx, 1);
+      next.splice(targetIdx, 0, removed);
+      const unique = Array.from(new Set(next));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('branchdeck_active_widgets', JSON.stringify(unique));
+      }
+      return unique;
+    });
+  };
+
+  const handleExportDashboard = () => {
+    const data = [
+      ['Metric', 'Value', 'Period'],
+      ['Page Views', '16,431', range],
+      ['Visitors', '6,225', range],
+      ['Clicks', '2,832', range],
+      ['Orders / PRs', '1,224', range],
+      ['Total Profit', '$446,700', range],
+      ['Active Integrations', String(summary?.integrations?.total ?? 0), range],
+      ['Total Requests', String(summary?.total_calls ?? 0), range],
+      ['Total Spend USD', `$${(summary?.cost_usd ?? 0).toFixed(2)}`, range],
+      ['Repeat Customer Rate', '68%', range],
+      ['Exported At', new Date().toISOString(), range]
+    ];
+    const csvContent = "data:text/csv;charset=utf-8," + data.map(e => e.join(",")).join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `branchdeck-dashboard-${range}-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Dashboard Data
   const [summary, setSummary] = useState<Summary | null>(null);
   const [integrations, setIntegrations] = useState<Integration[]>([]);
@@ -854,12 +1871,55 @@ export default function ClientDashboard() {
     }
   }, []);
 
-  // ── Demo mode bootstrap: skip auth entirely ─────────────────────────────────
+  // ── Demo mode bootstrap: skip auth & compute dynamic timeframe dataset ─────
   useEffect(() => {
     if (!isDemoMode) return;
     setLoading(false);
     setAuthLoading(false);
-  }, [isDemoMode]);
+
+    const days = rangeDays(range);
+    const factor = days / 30;
+
+    const demoDaily = Array.from({ length: days }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (days - 1 - i));
+      const dateStr = d.toISOString().slice(0, 10);
+      const baseCost = (446.70 / days) * (0.8 + (i % 5) * 0.1);
+      const baseTokens = Math.round((14850000 / days) * (0.8 + (i % 5) * 0.1));
+      return { day: dateStr, cost_usd: parseFloat(baseCost.toFixed(2)), tokens: baseTokens };
+    });
+
+    setSummary({
+      success: true,
+      window_days: days,
+      monthly_budget_usd: 500,
+      cost_usd: parseFloat((446.70 * factor).toFixed(2)),
+      avg_latency_ms: range === '7d' ? 264 : range === 'mtd' ? 275 : 283,
+      total_calls: Math.round(16431 * factor),
+      integrations: {
+        total: 3,
+        by_status: { merged: 2, pr_ready: 1 },
+        by_type: { search: 1, support_agent: 1, document_processing: 1 },
+      },
+      tokens: {
+        in: Math.round(8900000 * factor),
+        out: Math.round(5950000 * factor),
+        total: Math.round(14850000 * factor),
+      },
+      per_integration: [
+        { integration_id: '1', name: 'Semantic Search AST', type: 'search', tokens: Math.round(9650000 * factor), cost_usd: parseFloat((290.35 * factor).toFixed(2)) },
+        { integration_id: '2', name: 'AI Support Review Agent', type: 'support_agent', tokens: Math.round(3710000 * factor), cost_usd: parseFloat((111.68 * factor).toFixed(2)) },
+        { integration_id: '3', name: 'Codebase Doc Processing', type: 'document_processing', tokens: Math.round(1490000 * factor), cost_usd: parseFloat((44.67 * factor).toFixed(2)) },
+      ],
+      daily: demoDaily,
+    });
+    setBudgetCap(500);
+    setIntegrations([
+      { id: '1', repo_id: 'r1', name: 'Semantic Search AST', type: 'search', status: 'merged', pr_url: 'https://github.com/org/repo/pull/12', ast_match_score: 99.4, request_count: Math.round(10680 * factor), created_at: '2025-01-01', updated_at: '2025-01-15' },
+      { id: '2', repo_id: 'r2', name: 'AI Support Review Agent', type: 'support_agent', status: 'active_retainer', pr_url: 'https://github.com/org/repo/pull/15', ast_match_score: 98.8, request_count: Math.round(4250 * factor), created_at: '2025-01-05', updated_at: '2025-01-18' },
+      { id: '3', repo_id: 'r3', name: 'Codebase Doc Processing', type: 'document_processing', status: 'pr_ready', pr_url: 'https://github.com/org/repo/pull/18', ast_match_score: 99.6, request_count: Math.round(1501 * factor), created_at: '2025-01-10', updated_at: '2025-01-20' },
+    ]);
+  }, [isDemoMode, range]);
 
   // ── Auth bootstrap ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1208,11 +2268,11 @@ export default function ClientDashboard() {
       {/* ── Main Canvas ── */}
       <div className="flex-1 pl-0 lg:pl-60 transition-all min-w-0">
         {/* Topbar */}
-        <header className="h-16 border-b border-slate-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-4 sm:px-8 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <header className="min-h-16 border-b border-slate-200/80 bg-white/80 backdrop-blur-md sticky top-0 z-30 px-3 sm:px-8 py-2 sm:py-0 flex items-center justify-between gap-2 sm:gap-4 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <button
               onClick={() => setMobileSidebarOpen(o => !o)}
-              className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors border border-slate-200/80"
+              className="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors border border-slate-200/80 flex-shrink-0"
               aria-label="Toggle Navigation"
             >
               <Menu className="w-5 h-5" />
@@ -1222,10 +2282,10 @@ export default function ClientDashboard() {
             <div className="relative">
               <button
                 onClick={() => setOrgMenuOpen(o => !o)}
-                className="flex items-center gap-2 text-xs font-bold text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-colors shadow-2xs"
+                className="flex items-center gap-1.5 sm:gap-2 text-xs font-bold text-slate-800 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-colors shadow-2xs"
               >
                 <Building2 className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                <span className="max-w-[120px] sm:max-w-[160px] truncate">{activeOrg || (session ? 'Self-Serve Account' : 'Select Organization')}</span>
+                <span className="max-w-[95px] sm:max-w-[160px] truncate">{activeOrg || (session ? 'Self-Serve Account' : 'Select Organization')}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
               </button>
               {orgMenuOpen && orgs.length > 0 && (
@@ -1247,14 +2307,23 @@ export default function ClientDashboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+            {/* Export Button */}
+            <button
+              onClick={handleExportDashboard}
+              className="hidden sm:flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-all shadow-sm shadow-blue-500/20 cursor-pointer whitespace-nowrap"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Export</span>
+            </button>
+
             {/* Date Range Picker */}
-            <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-100/80 rounded-xl p-1 border border-slate-200/60">
+            <div className="flex items-center gap-0.5 bg-slate-100/80 rounded-xl p-0.5 sm:p-1 border border-slate-200/60">
               {(['7d', '30d', 'mtd'] as DateRange[]).map(r => (
                 <button
                   key={r}
                   onClick={() => setRange(r)}
-                  className={`px-2.5 py-1 text-[11px] sm:text-xs font-semibold rounded-lg transition-all ${
+                  className={`px-2 py-1 text-[10px] sm:text-xs font-semibold rounded-lg transition-all ${
                     range === r
                       ? 'bg-white text-blue-700 shadow-xs border border-slate-200/80 font-bold'
                       : 'text-slate-600 hover:text-slate-900'
@@ -1264,6 +2333,15 @@ export default function ClientDashboard() {
                 </button>
               ))}
             </div>
+
+            {/* Add Widget Button */}
+            <button
+              onClick={() => setIsAddWidgetOpen(true)}
+              className="hidden md:flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 text-xs font-bold px-3.5 py-2 rounded-xl shadow-2xs transition-all cursor-pointer whitespace-nowrap"
+            >
+              <Plus className="w-4 h-4 text-blue-600" />
+              <span>Add widget</span>
+            </button>
 
             {/* Refresh Button */}
             <button
@@ -1278,15 +2356,15 @@ export default function ClientDashboard() {
             {/* Contact Us Button */}
             <button
               onClick={() => setIsContactModalOpen(true)}
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl transition-all shadow-sm shadow-blue-500/20 cursor-pointer whitespace-nowrap"
+              className="hidden md:flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2 rounded-xl transition-all border border-slate-200/80 cursor-pointer whitespace-nowrap"
             >
-              <Mail className="w-3.5 h-3.5" />
+              <Mail className="w-3.5 h-3.5 text-slate-500" />
               <span>Contact Us</span>
             </button>
 
             {/* Header User Identity & Sign Out Control */}
             {session?.user && (
-              <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+              <div className="hidden lg:flex items-center gap-2 pl-2 border-l border-slate-200">
                 <div className="flex items-center gap-2 px-2.5 py-1.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs shadow-2xs">
                   <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0">
                     {(session.user.email?.[0] ?? 'U').toUpperCase()}
@@ -1308,7 +2386,7 @@ export default function ClientDashboard() {
         </header>
 
         {/* Page Content Body */}
-        <main className="px-4 sm:px-8 py-6 sm:py-8 max-w-screen-xl mx-auto space-y-6 min-w-0">
+        <main className="px-4 sm:px-8 py-6 sm:py-8 max-w-screen-xl mx-auto space-y-6 min-w-0 pb-24 lg:pb-8">
           {/* Error Banner */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-2xl px-5 py-3.5 text-xs font-medium text-red-700 flex items-center gap-3 shadow-xs">
@@ -1318,28 +2396,236 @@ export default function ClientDashboard() {
           )}
 
           {/* ══════════════════════════════════════════════════════════════════
-             TAB 1: DASHBOARD OVERVIEW
+             TAB 1: DASHBOARD OVERVIEW & FEATURE WIDGETS
              ══════════════════════════════════════════════════════════════════ */}
           {activeNav === 'dashboard' && (
             <>
-              {/* Header Title */}
+              {/* Header Title & Mobile Quick Actions */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Dashboard Overview</h1>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Dashboard</h1>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    AI integration retainer metrics · {range === 'mtd' ? 'Month to date' : `Last ${range}`}
+                    Real-time performance analytics & active feature widgets · {range === 'mtd' ? 'Jan 1, 2025 - Feb 1, 2025' : `Last ${range}`}
                   </p>
                 </div>
-                {isSpikeSafe ? (
-                  <span className="self-start sm:self-auto flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-3.5 py-1.5 rounded-full shadow-2xs">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    Spend Healthy · No Spikes
-                  </span>
+                <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                  <button
+                    onClick={() => setIsAddWidgetOpen(true)}
+                    className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow-sm cursor-pointer transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add widget</span>
+                  </button>
+                  <button
+                    onClick={handleExportDashboard}
+                    className="sm:hidden flex items-center gap-1.5 bg-white border border-slate-200 text-slate-700 text-xs font-bold px-3 py-2 rounded-xl shadow-2xs cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Export</span>
+                  </button>
+                  {isSpikeSafe ? (
+                    <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-full shadow-2xs">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      Spend Healthy
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 border border-red-200/80 px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-full shadow-2xs">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                      Approaching Cap
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Active Custom Widgets Grid (Drag-and-Drop & Reorderable) ── */}
+              <div className="space-y-5">
+                {activeWidgetIds.length === 0 ? (
+                  <div className="p-8 bg-white border border-dashed border-slate-300 rounded-2xl text-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+                      <Plus className="w-6 h-6" />
+                    </div>
+                    <p className="text-sm font-bold text-slate-800">No Active Widgets Displayed</p>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      Click the button below to add feature widgets to your Branchdeck telemetry dashboard.
+                    </p>
+                    <button
+                      onClick={() => setIsAddWidgetOpen(true)}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm cursor-pointer"
+                    >
+                      + Add Widgets
+                    </button>
+                  </div>
                 ) : (
-                  <span className="self-start sm:self-auto flex items-center gap-1.5 text-xs font-bold text-red-700 bg-red-50 border border-red-200/80 px-3.5 py-1.5 rounded-full shadow-2xs">
-                    <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
-                    Approaching Cap
-                  </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 grid-flow-dense">
+                    {activeWidgetIds.map((id) => {
+                      const isDragging = draggedWidgetId === id;
+                      const isDropTarget = dropTargetWidgetId === id;
+
+                      const widgetContent = (() => {
+                        switch (id) {
+                          case 'metrics_grid':
+                            return (
+                              <WidgetMetricsGrid
+                                summary={summary}
+                                integrations={integrations}
+                                isDemoMode={isDemoMode}
+                                range={range}
+                                onRemove={handleRemoveWidget}
+                                onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
+                                onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
+                                onOpenAddDrawer={() => setIsAddWidgetOpen(true)}
+                              />
+                            );
+                          case 'total_profit':
+                            return (
+                              <WidgetTotalProfit
+                                summary={summary}
+                                budgetCap={budgetCap}
+                                isDemoMode={isDemoMode}
+                                range={range}
+                                onRemove={handleRemoveWidget}
+                                onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
+                                onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
+                                onOpenAddDrawer={() => setIsAddWidgetOpen(true)}
+                              />
+                            );
+                          case 'customers_segmentation':
+                            return (
+                              <WidgetCustomerSegmentation
+                                summary={summary}
+                                isDemoMode={isDemoMode}
+                                range={range}
+                                onRemove={handleRemoveWidget}
+                                onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
+                                onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
+                                onOpenAddDrawer={() => setIsAddWidgetOpen(true)}
+                              />
+                            );
+                          case 'most_day_active':
+                            return (
+                              <WidgetMostDayActive
+                                summary={summary}
+                                isDemoMode={isDemoMode}
+                                range={range}
+                                onRemove={handleRemoveWidget}
+                                onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
+                                onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
+                                onOpenAddDrawer={() => setIsAddWidgetOpen(true)}
+                              />
+                            );
+                          case 'repeat_customer_rate':
+                            return (
+                              <WidgetRepeatCustomerRate
+                                integrations={integrations}
+                                isDemoMode={isDemoMode}
+                                range={range}
+                                onRemove={handleRemoveWidget}
+                                onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
+                                onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
+                                onOpenAddDrawer={() => setIsAddWidgetOpen(true)}
+                              />
+                            );
+                          case 'ai_assistant':
+                            return (
+                              <WidgetAiAssistant
+                                onRemove={handleRemoveWidget}
+                                onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
+                                onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
+                                onOpenAddDrawer={() => setIsAddWidgetOpen(true)}
+                              />
+                            );
+                          case 'visitors_by_device':
+                            return (
+                              <WidgetVisitorsByDevice
+                                summary={summary}
+                                isDemoMode={isDemoMode}
+                                range={range}
+                                onRemove={handleRemoveWidget}
+                                onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
+                                onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
+                                onOpenAddDrawer={() => setIsAddWidgetOpen(true)}
+                              />
+                            );
+                          case 'orders_performance':
+                            return (
+                              <WidgetOrdersPerformance
+                                integrations={integrations}
+                                isDemoMode={isDemoMode}
+                                range={range}
+                                onRemove={handleRemoveWidget}
+                                onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
+                                onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
+                                onOpenAddDrawer={() => setIsAddWidgetOpen(true)}
+                              />
+                            );
+                          case 'trend_analysis':
+                            return (
+                              <WidgetTrendAnalysis
+                                summary={summary}
+                                isDemoMode={isDemoMode}
+                                range={range}
+                                onRemove={handleRemoveWidget}
+                                onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
+                                onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
+                                onOpenAddDrawer={() => setIsAddWidgetOpen(true)}
+                              />
+                            );
+                          default:
+                            return null;
+                        }
+                      })();
+
+                      if (!widgetContent) return null;
+
+                      return (
+                        <div
+                          key={id}
+                          draggable
+                          onDragStart={(e) => {
+                            e.dataTransfer.setData('text/plain', id);
+                            e.dataTransfer.effectAllowed = 'move';
+                            setDraggedWidgetId(id);
+                          }}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                            if (dropTargetWidgetId !== id) {
+                              setDropTargetWidgetId(id);
+                            }
+                          }}
+                          onDragLeave={() => {
+                            if (dropTargetWidgetId === id) setDropTargetWidgetId(null);
+                          }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            const sourceId = e.dataTransfer.getData('text/plain') || draggedWidgetId;
+                            if (sourceId && sourceId !== id) {
+                              handleReorderWidgets(sourceId, id);
+                            }
+                            setDraggedWidgetId(null);
+                            setDropTargetWidgetId(null);
+                          }}
+                          onDragEnd={() => {
+                            setDraggedWidgetId(null);
+                            setDropTargetWidgetId(null);
+                          }}
+                          className={`group relative transition-all duration-200 col-span-1 ${
+                            isDragging ? 'opacity-40 scale-[0.98]' : 'opacity-100'
+                          } ${
+                            isDropTarget ? 'ring-2 ring-blue-500 ring-offset-2 rounded-2xl' : ''
+                          }`}
+                        >
+                          {/* Drag indicator pill on hover */}
+                          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-slate-800/80 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full cursor-grab active:cursor-grabbing shadow-sm pointer-events-auto">
+                            <GripVertical className="w-3 h-3 text-slate-300" />
+                            <span>Drag to reorder</span>
+                          </div>
+
+                          {widgetContent}
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 
@@ -2389,6 +3675,41 @@ export default function ClientDashboard() {
           )}
         </main>
       </div>
+      {/* ── Add Widget Slide-over Drawer ── */}
+      <AddWidgetDrawer
+        isOpen={isAddWidgetOpen}
+        onClose={() => setIsAddWidgetOpen(false)}
+        activeWidgetIds={activeWidgetIds}
+        onToggleWidget={handleToggleWidget}
+      />
+
+      {/* ── Mobile Bottom Navigation Bar ── */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-4 py-2 flex items-center justify-around shadow-lg">
+        {[
+          { id: 'dashboard', label: 'Dashboard', icon: Compass },
+          { id: 'store', label: 'Feature Catalog', icon: Mail },
+          { id: 'repos', label: 'Repos', icon: Package },
+          { id: 'settings', label: 'Settings', icon: Settings },
+        ].map((item) => {
+          const Icon = item.icon;
+          const active = activeNav === item.id;
+          return (
+            <button
+              key={item.id}
+              onClick={() => setActiveNav(item.id)}
+              className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all ${
+                active ? 'text-blue-600 font-bold' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              <div className={`p-1.5 rounded-xl ${active ? 'bg-blue-50 text-blue-600 shadow-2xs' : ''}`}>
+                <Icon className="w-5 h-5" />
+              </div>
+              <span className="text-[10px] tracking-tight">{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       <ContactModal
         isOpen={isContactModalOpen}
         onClose={() => setIsContactModalOpen(false)}
