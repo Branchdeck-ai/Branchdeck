@@ -1398,7 +1398,7 @@ function AuthGate({ onReady }: { onReady: (session: any) => void }) {
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 w-full max-w-sm">
         {/* Back link */}
         <a
-          href="/"
+          href="/?skip_redirect=true"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors mb-5 group"
         >
           <ArrowLeft className="w-3.5 h-3.5 text-slate-400 group-hover:-translate-x-0.5 transition-transform" />
@@ -1406,7 +1406,7 @@ function AuthGate({ onReady }: { onReady: (session: any) => void }) {
         </a>
 
         {/* Brand Header */}
-        <a href="/" className="flex items-center gap-3 mb-6 hover:opacity-90 transition-opacity">
+        <a href="/?skip_redirect=true" className="flex items-center gap-3 mb-6 hover:opacity-90 transition-opacity">
           <BranchdeckLogo className="w-9 h-9 object-contain rounded-xl flex-shrink-0" />
           <div>
             <p className="font-bold text-slate-900 text-base leading-none">Branchdeck</p>
@@ -1559,7 +1559,7 @@ function AuthGate({ onReady }: { onReady: (session: any) => void }) {
 
           <div>
             <a
-              href="/"
+              href="/?skip_redirect=true"
               className="inline-flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-blue-600 transition-colors pt-1"
             >
               ← Return to Branchdeck home
@@ -2455,7 +2455,7 @@ export default function ClientDashboard() {
       }`}>
         {/* Logo Header */}
         <div className="px-5 py-5 border-b border-slate-100 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
+          <a href="/?skip_redirect=true" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
             <BranchdeckLogo className="w-8 h-8 object-contain rounded-xl flex-shrink-0 shadow-sm" />
             <div>
               <p className="font-bold text-slate-900 text-base leading-none tracking-tight">Branchdeck</p>
@@ -2511,7 +2511,7 @@ export default function ClientDashboard() {
 
           <div className="pt-2 border-t border-slate-100 mt-2">
             <a
-              href="/"
+              href="/?skip_redirect=true"
               className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold tracking-wide text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all"
             >
               <ArrowLeft className="w-4 h-4 text-slate-400 flex-shrink-0" />
