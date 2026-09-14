@@ -688,7 +688,9 @@ function AddWidgetDrawer({
 function WidgetHeaderMenu({
   widgetId,
   span = 1,
+  height = 'standard',
   onToggleSpan,
+  onToggleHeight,
   onRemove,
   onMoveUp,
   onMoveDown,
@@ -696,7 +698,9 @@ function WidgetHeaderMenu({
 }: {
   widgetId: string;
   span?: number;
+  height?: 'compact' | 'standard' | 'expanded';
   onToggleSpan?: (id: string) => void;
+  onToggleHeight?: (id: string) => void;
   onRemove?: (id: string) => void;
   onMoveUp?: (id: string) => void;
   onMoveDown?: (id: string) => void;
@@ -735,7 +739,7 @@ function WidgetHeaderMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl border border-slate-200 shadow-xl z-50 py-1 text-xs animate-in fade-in duration-150">
+        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl border border-slate-200 shadow-xl z-50 py-1 text-xs animate-in fade-in duration-150">
           <div className="px-3 py-1.5 border-b border-slate-100 font-bold text-[10px] uppercase text-slate-400 tracking-wider">
             Widget Options
           </div>
@@ -749,8 +753,22 @@ function WidgetHeaderMenu({
               }}
               className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2 cursor-pointer"
             >
-              {span === 2 ? <Minimize2 className="w-3.5 h-3.5 text-blue-600" /> : <Maximize2 className="w-3.5 h-3.5 text-blue-600" />}
-              <span>{span === 2 ? 'Contract (1 Col)' : 'Extend (2 Cols)'}</span>
+              {span > 1 ? <Minimize2 className="w-3.5 h-3.5 text-blue-600" /> : <Maximize2 className="w-3.5 h-3.5 text-blue-600" />}
+              <span>{span === 1 ? 'Extend (2 Cols)' : span === 2 ? 'Extend (3 Cols)' : 'Contract (1 Col)'}</span>
+            </button>
+          )}
+          {onToggleHeight && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleHeight(widgetId);
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2 cursor-pointer"
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 text-indigo-600" />
+              <span>{height === 'standard' ? 'Expand Height' : height === 'expanded' ? 'Compact Height' : 'Standard Height'}</span>
             </button>
           )}
           {onMoveUp && (
@@ -821,7 +839,7 @@ function WidgetHeaderMenu({
 // ─── Individual Software Widget Components ─────────────────────────────────
 
 // 1. Quick 2x2 Software Telemetry Metrics Widget
-function WidgetMetricsGrid({ summary, integrations, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; integrations: Integration[]; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetMetricsGrid({ summary, integrations, isDemoMode, range, span, height, onToggleSpan, onToggleHeight, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; integrations: Integration[]; isDemoMode: boolean; range: DateRange; span?: number; height?: 'compact' | 'standard' | 'expanded'; onToggleSpan?: (id: string) => void; onToggleHeight?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const days = rangeDays(range);
   const factor = days / 30;
   
@@ -849,7 +867,7 @@ function WidgetMetricsGrid({ summary, integrations, isDemoMode, range, span, onT
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
         <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Software Telemetry Overview</span>
-        <WidgetHeaderMenu widgetId="metrics_grid" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="metrics_grid" span={span} height={height} onToggleSpan={onToggleSpan} onToggleHeight={onToggleHeight} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         {/* API Invocations */}
@@ -909,7 +927,7 @@ function WidgetMetricsGrid({ summary, integrations, isDemoMode, range, span, onT
 }
 
 // 2. API Token Spend & Monthly Budget Widget
-function WidgetTotalProfit({ summary, budgetCap, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; budgetCap: number; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetTotalProfit({ summary, budgetCap, isDemoMode, range, span, height, onToggleSpan, onToggleHeight, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; budgetCap: number; isDemoMode: boolean; range: DateRange; span?: number; height?: 'compact' | 'standard' | 'expanded'; onToggleSpan?: (id: string) => void; onToggleHeight?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const days = rangeDays(range);
   const factor = days / 30;
   const costVal = isDemoMode ? fmtUSD(446.70 * factor) : fmtUSD(summary?.cost_usd ?? 0);
@@ -938,7 +956,7 @@ function WidgetTotalProfit({ summary, budgetCap, isDemoMode, range, span, onTogg
             </span>
           </div>
         </div>
-        <WidgetHeaderMenu widgetId="total_profit" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="total_profit" span={span} height={height} onToggleSpan={onToggleSpan} onToggleHeight={onToggleHeight} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       <div className="relative pt-2">
@@ -949,7 +967,7 @@ function WidgetTotalProfit({ summary, budgetCap, isDemoMode, range, span, onTogg
 }
 
 // 3. AI Feature Capabilities Breakdown Widget
-function WidgetCustomerSegmentation({ summary, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetCustomerSegmentation({ summary, isDemoMode, range, span, height, onToggleSpan, onToggleHeight, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; height?: 'compact' | 'standard' | 'expanded'; onToggleSpan?: (id: string) => void; onToggleHeight?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const days = rangeDays(range);
   const factor = days / 30;
 
@@ -968,7 +986,7 @@ function WidgetCustomerSegmentation({ summary, isDemoMode, range, span, onToggle
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">AI Retainer Capabilities ({range.toUpperCase()})</h3>
-        <WidgetHeaderMenu widgetId="customers_segmentation" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="customers_segmentation" span={span} height={height} onToggleSpan={onToggleSpan} onToggleHeight={onToggleHeight} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       {items.length === 0 ? (
@@ -999,7 +1017,7 @@ function WidgetCustomerSegmentation({ summary, isDemoMode, range, span, onToggle
 }
 
 // 4. Peak Developer & Webhook Activity Bar Chart Widget
-function WidgetMostDayActive({ summary, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetMostDayActive({ summary, isDemoMode, range, span, height, onToggleSpan, onToggleHeight, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; height?: 'compact' | 'standard' | 'expanded'; onToggleSpan?: (id: string) => void; onToggleHeight?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const days = isDemoMode ? (() => {
     const factor = rangeDays(range) / 30;
     return [
@@ -1037,7 +1055,7 @@ function WidgetMostDayActive({ summary, isDemoMode, range, span, onToggleSpan, o
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">Peak Retainer Activity ({range.toUpperCase()})</h3>
-        <WidgetHeaderMenu widgetId="most_day_active" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="most_day_active" span={span} height={height} onToggleSpan={onToggleSpan} onToggleHeight={onToggleHeight} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       <div className="pt-6 pb-2">
@@ -1072,7 +1090,7 @@ function WidgetMostDayActive({ summary, isDemoMode, range, span, onToggleSpan, o
 }
 
 // 5. AST Code Health & Pattern Match Gauge Widget
-function WidgetRepeatCustomerRate({ integrations, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { integrations: Integration[]; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetRepeatCustomerRate({ integrations, isDemoMode, range, span, height, onToggleSpan, onToggleHeight, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { integrations: Integration[]; isDemoMode: boolean; range: DateRange; span?: number; height?: 'compact' | 'standard' | 'expanded'; onToggleSpan?: (id: string) => void; onToggleHeight?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const avgAst = isDemoMode ? (range === '7d' ? 99.7 : range === 'mtd' ? 99.5 : 99.4) : (integrations.length > 0
     ? (integrations.reduce((sum, i) => sum + astScorePct(i.ast_match_score), 0) / integrations.length)
     : 0);
@@ -1085,7 +1103,7 @@ function WidgetRepeatCustomerRate({ integrations, isDemoMode, range, span, onTog
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4 flex flex-col items-center text-center">
       <div className="w-full flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">AST Codebase Health</h3>
-        <WidgetHeaderMenu widgetId="repeat_customer_rate" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="repeat_customer_rate" span={span} height={height} onToggleSpan={onToggleSpan} onToggleHeight={onToggleHeight} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       <div className="relative py-2 w-44">
@@ -1121,7 +1139,7 @@ function WidgetRepeatCustomerRate({ integrations, isDemoMode, range, span, onTog
 }
 
 // 6. Branchdeck AI Code Assistant Widget
-function WidgetAiAssistant({ span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetAiAssistant({ span, height, onToggleSpan, onToggleHeight, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { span?: number; height?: 'compact' | 'standard' | 'expanded'; onToggleSpan?: (id: string) => void; onToggleHeight?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
@@ -1146,7 +1164,7 @@ function WidgetAiAssistant({ span, onToggleSpan, onRemove, onMoveUp, onMoveDown,
           </div>
           <h3 className="text-sm font-bold text-slate-900">Branchdeck AI Assistant</h3>
         </div>
-        <WidgetHeaderMenu widgetId="ai_assistant" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="ai_assistant" span={span} height={height} onToggleSpan={onToggleSpan} onToggleHeight={onToggleHeight} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       <div className="relative">
@@ -1199,7 +1217,7 @@ function WidgetAiAssistant({ span, onToggleSpan, onRemove, onMoveUp, onMoveDown,
 }
 
 // 7. AI Model Invocations Widget
-function WidgetVisitorsByDevice({ summary, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetVisitorsByDevice({ summary, isDemoMode, range, span, height, onToggleSpan, onToggleHeight, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; height?: 'compact' | 'standard' | 'expanded'; onToggleSpan?: (id: string) => void; onToggleHeight?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const factor = rangeDays(range) / 30;
   const totalCalls = isDemoMode ? fmt(Math.round(16431 * factor)) : fmt(summary?.total_calls ?? 0);
   const hasCalls = isDemoMode || (summary?.total_calls ?? 0) > 0;
@@ -1208,7 +1226,7 @@ function WidgetVisitorsByDevice({ summary, isDemoMode, range, span, onToggleSpan
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">AI Model Invocations ({range.toUpperCase()})</h3>
-        <WidgetHeaderMenu widgetId="visitors_by_device" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="visitors_by_device" span={span} height={height} onToggleSpan={onToggleSpan} onToggleHeight={onToggleHeight} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       <div className="flex items-center gap-6">
@@ -1243,7 +1261,7 @@ function WidgetVisitorsByDevice({ summary, isDemoMode, range, span, onToggleSpan
 }
 
 // 8. GitHub PR Velocity Widget
-function WidgetOrdersPerformance({ integrations, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { integrations: Integration[]; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetOrdersPerformance({ integrations, isDemoMode, range, span, height, onToggleSpan, onToggleHeight, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { integrations: Integration[]; isDemoMode: boolean; range: DateRange; span?: number; height?: 'compact' | 'standard' | 'expanded'; onToggleSpan?: (id: string) => void; onToggleHeight?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const factor = rangeDays(range) / 30;
   const mergedCount = isDemoMode ? Math.max(1, Math.round(14 * factor)) : integrations.filter(i => i.status === 'merged').length;
   const activePRs = isDemoMode ? Math.max(1, Math.round(3 * factor)) : integrations.filter(i => i.status === 'pr_ready' || i.status === 'in_progress').length;
@@ -1253,7 +1271,7 @@ function WidgetOrdersPerformance({ integrations, isDemoMode, range, span, onTogg
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">GitHub PR Velocity ({range.toUpperCase()})</h3>
-        <WidgetHeaderMenu widgetId="orders_performance" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="orders_performance" span={span} height={height} onToggleSpan={onToggleSpan} onToggleHeight={onToggleHeight} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
       <p className="text-xs text-slate-500">Monitor AI feature PR volume, AST checks, and merge speed in real time.</p>
       <div className="grid grid-cols-3 gap-2 pt-2 text-center border-t border-slate-100">
@@ -1275,7 +1293,7 @@ function WidgetOrdersPerformance({ integrations, isDemoMode, range, span, onTogg
 }
 
 // 9. Codebase Indexing Trend Widget
-function WidgetTrendAnalysis({ summary, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetTrendAnalysis({ summary, isDemoMode, range, span, height, onToggleSpan, onToggleHeight, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; height?: 'compact' | 'standard' | 'expanded'; onToggleSpan?: (id: string) => void; onToggleHeight?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const hasData = isDemoMode || (summary?.total_calls ?? 0) > 0 || (summary?.daily?.some(d => d.cost_usd > 0) ?? false);
   const dPath = range === '7d' 
     ? "M 0 35 Q 50 15 100 25 T 200 8" 
@@ -1287,7 +1305,7 @@ function WidgetTrendAnalysis({ summary, isDemoMode, range, span, onToggleSpan, o
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">Codebase Indexing Trend ({range.toUpperCase()})</h3>
-        <WidgetHeaderMenu widgetId="trend_analysis" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="trend_analysis" span={span} height={height} onToggleSpan={onToggleSpan} onToggleHeight={onToggleHeight} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
       <p className="text-xs text-slate-500">Track AST symbol tree indexing velocity and P99 response time trends for {range}.</p>
       {hasData ? (
@@ -1582,7 +1600,7 @@ export default function ClientDashboard() {
   const [draggedWidgetId, setDraggedWidgetId] = useState<string | null>(null);
   const [dropTargetWidgetId, setDropTargetWidgetId] = useState<string | null>(null);
 
-  // Widget Column Span state (1 column vs 2 columns) with local storage persistence
+  // Widget Column Span state (1, 2, or 3 columns) with local storage persistence
   const [widgetSpans, setWidgetSpans] = useState<Record<string, number>>(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -1598,16 +1616,107 @@ export default function ClientDashboard() {
     return { total_profit: 2 };
   });
 
+  // Widget Height state ('compact' | 'standard' | 'expanded') with local storage persistence
+  const [widgetHeights, setWidgetHeights] = useState<Record<string, 'compact' | 'standard' | 'expanded'>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('branchdeck_widget_heights');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      } catch (e) {
+        console.warn('[Branchdeck] Failed to load widget heights', e);
+      }
+    }
+    return {};
+  });
+
   const handleToggleWidgetSpan = (widgetId: string) => {
     setWidgetSpans(prev => {
       const current = prev[widgetId] || (widgetId === 'total_profit' ? 2 : 1);
-      const nextSpan = current === 1 ? 2 : 1;
+      const nextSpan = current === 1 ? 2 : current === 2 ? 3 : 1;
       const updated = { ...prev, [widgetId]: nextSpan };
       if (typeof window !== 'undefined') {
         localStorage.setItem('branchdeck_widget_spans', JSON.stringify(updated));
       }
       return updated;
     });
+  };
+
+  const handleToggleWidgetHeight = (widgetId: string) => {
+    setWidgetHeights(prev => {
+      const current = prev[widgetId] || 'standard';
+      const nextHeight: 'compact' | 'standard' | 'expanded' =
+        current === 'standard' ? 'expanded' : current === 'expanded' ? 'compact' : 'standard';
+      const updated = { ...prev, [widgetId]: nextHeight };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('branchdeck_widget_heights', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
+
+  const startBorderResize = (
+    e: React.MouseEvent,
+    widgetId: string,
+    type: 'horizontal' | 'vertical' | 'both'
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    const initialSpan = widgetSpans[widgetId] || (widgetId === 'total_profit' ? 2 : 1);
+    const initialHeight = widgetHeights[widgetId] || 'standard';
+
+    let lastSpan = initialSpan;
+    let lastHeight = initialHeight;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      moveEvent.preventDefault();
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
+
+      if (type === 'horizontal' || type === 'both') {
+        let targetSpan = initialSpan;
+        if (dx > 40) targetSpan = Math.min(3, initialSpan + 1);
+        else if (dx < -40) targetSpan = Math.max(1, initialSpan - 1);
+
+        if (targetSpan !== lastSpan) {
+          lastSpan = targetSpan;
+          setWidgetSpans(prev => {
+            const updated = { ...prev, [widgetId]: targetSpan };
+            if (typeof window !== 'undefined') localStorage.setItem('branchdeck_widget_spans', JSON.stringify(updated));
+            return updated;
+          });
+        }
+      }
+
+      if (type === 'vertical' || type === 'both') {
+        let targetHeight: 'compact' | 'standard' | 'expanded' = initialHeight;
+        if (dy > 40) targetHeight = 'expanded';
+        else if (dy < -40) targetHeight = 'compact';
+
+        if (targetHeight !== lastHeight) {
+          lastHeight = targetHeight;
+          setWidgetHeights(prev => {
+            const updated = { ...prev, [widgetId]: targetHeight };
+            if (typeof window !== 'undefined') localStorage.setItem('branchdeck_widget_heights', JSON.stringify(updated));
+            return updated;
+          });
+        }
+      }
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
   };
 
   const [activeWidgetIds, setActiveWidgetIds] = useState<string[]>(() => {
@@ -2508,7 +2617,17 @@ export default function ClientDashboard() {
                       const isDragging = draggedWidgetId === id;
                       const isDropTarget = dropTargetWidgetId === id;
                       const span = widgetSpans[id] || (id === 'total_profit' ? 2 : 1);
-                      const spanClass = span === 2 ? 'col-span-1 md:col-span-2 lg:col-span-2' : 'col-span-1';
+                      const height = widgetHeights[id] || 'standard';
+
+                      const spanClass =
+                        span === 3 ? 'col-span-1 md:col-span-2 lg:col-span-3' :
+                        span === 2 ? 'col-span-1 md:col-span-2 lg:col-span-2' :
+                        'col-span-1';
+
+                      const heightClass =
+                        height === 'compact' ? 'max-h-[300px] overflow-hidden' :
+                        height === 'expanded' ? 'min-h-[500px]' :
+                        'min-h-[340px]';
 
                       const widgetContent = (() => {
                         switch (id) {
@@ -2520,7 +2639,9 @@ export default function ClientDashboard() {
                                 isDemoMode={isDemoMode}
                                 range={range}
                                 span={span}
+                                height={height}
                                 onToggleSpan={handleToggleWidgetSpan}
+                                onToggleHeight={handleToggleWidgetHeight}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2535,7 +2656,9 @@ export default function ClientDashboard() {
                                 isDemoMode={isDemoMode}
                                 range={range}
                                 span={span}
+                                height={height}
                                 onToggleSpan={handleToggleWidgetSpan}
+                                onToggleHeight={handleToggleWidgetHeight}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2549,7 +2672,9 @@ export default function ClientDashboard() {
                                 isDemoMode={isDemoMode}
                                 range={range}
                                 span={span}
+                                height={height}
                                 onToggleSpan={handleToggleWidgetSpan}
+                                onToggleHeight={handleToggleWidgetHeight}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2563,7 +2688,9 @@ export default function ClientDashboard() {
                                 isDemoMode={isDemoMode}
                                 range={range}
                                 span={span}
+                                height={height}
                                 onToggleSpan={handleToggleWidgetSpan}
+                                onToggleHeight={handleToggleWidgetHeight}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2577,7 +2704,9 @@ export default function ClientDashboard() {
                                 isDemoMode={isDemoMode}
                                 range={range}
                                 span={span}
+                                height={height}
                                 onToggleSpan={handleToggleWidgetSpan}
+                                onToggleHeight={handleToggleWidgetHeight}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2588,7 +2717,9 @@ export default function ClientDashboard() {
                             return (
                               <WidgetAiAssistant
                                 span={span}
+                                height={height}
                                 onToggleSpan={handleToggleWidgetSpan}
+                                onToggleHeight={handleToggleWidgetHeight}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2602,7 +2733,9 @@ export default function ClientDashboard() {
                                 isDemoMode={isDemoMode}
                                 range={range}
                                 span={span}
+                                height={height}
                                 onToggleSpan={handleToggleWidgetSpan}
+                                onToggleHeight={handleToggleWidgetHeight}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2616,7 +2749,9 @@ export default function ClientDashboard() {
                                 isDemoMode={isDemoMode}
                                 range={range}
                                 span={span}
+                                height={height}
                                 onToggleSpan={handleToggleWidgetSpan}
+                                onToggleHeight={handleToggleWidgetHeight}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2630,7 +2765,9 @@ export default function ClientDashboard() {
                                 isDemoMode={isDemoMode}
                                 range={range}
                                 span={span}
+                                height={height}
                                 onToggleSpan={handleToggleWidgetSpan}
+                                onToggleHeight={handleToggleWidgetHeight}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2676,32 +2813,109 @@ export default function ClientDashboard() {
                             setDraggedWidgetId(null);
                             setDropTargetWidgetId(null);
                           }}
-                          className={`group relative transition-all duration-300 ${spanClass} ${
+                          className={`group relative transition-all duration-500 ease-in-out transform-gpu ${spanClass} ${
                             isDragging ? 'opacity-40 scale-[0.98]' : 'opacity-100'
                           } ${
                             isDropTarget ? 'ring-2 ring-blue-500 ring-offset-2 rounded-2xl' : ''
                           }`}
                         >
+                          {/* Resizable Status Pill Badge on Hover */}
+                          <div className="absolute top-2 right-12 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/90 text-white text-[10px] font-mono px-2.5 py-0.5 rounded-full shadow-md pointer-events-none flex items-center gap-1.5 backdrop-blur-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>{span} Col{span > 1 ? 's' : ''} • {height.toUpperCase()}</span>
+                          </div>
+
                           {/* Drag indicator pill on hover */}
                           <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-slate-800/80 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full cursor-grab active:cursor-grabbing shadow-sm pointer-events-auto">
                             <GripVertical className="w-3 h-3 text-slate-300" />
                             <span>Drag to reorder</span>
                           </div>
 
-                          {/* Resizable Right Border Control Handle */}
-                          <button
-                            type="button"
+                          {/* ── 4 BORDER & CORNER RESIZE HANDLES WITH DRAG & CLICK ── */}
+
+                          {/* RIGHT BORDER */}
+                          <div
+                            onMouseDown={(e) => startBorderResize(e, id, 'horizontal')}
+                            onDragStart={(e) => e.stopPropagation()}
                             onClick={(e) => {
                               e.stopPropagation();
                               handleToggleWidgetSpan(id);
                             }}
-                            className="absolute right-0 top-1/2 -translate-y-1/2 h-16 w-2.5 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center bg-blue-600 text-white rounded-l-md shadow-md hover:w-3.5"
-                            title={span === 2 ? "Click or hold border to contract to 1 column" : "Click or hold border to extend to 2 columns"}
+                            className="absolute -right-2 top-3 bottom-3 w-4 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center group/handle"
+                            title="Click or drag right border to extend/contract column width"
                           >
-                            <div className="w-0.5 h-8 bg-white/90 rounded-full" />
-                          </button>
+                            <div className="w-1.5 h-16 bg-blue-600/80 group-hover/handle:bg-blue-600 rounded-full shadow-md transition-all group-hover/handle:h-24 group-hover/handle:w-2 flex items-center justify-center border border-white/50">
+                              <div className="w-0.5 h-8 bg-white rounded-full" />
+                            </div>
+                          </div>
 
-                          {widgetContent}
+                          {/* LEFT BORDER */}
+                          <div
+                            onMouseDown={(e) => startBorderResize(e, id, 'horizontal')}
+                            onDragStart={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleWidgetSpan(id);
+                            }}
+                            className="absolute -left-2 top-3 bottom-3 w-4 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center group/handle"
+                            title="Click or drag left border to extend/contract column width"
+                          >
+                            <div className="w-1.5 h-16 bg-blue-600/80 group-hover/handle:bg-blue-600 rounded-full shadow-md transition-all group-hover/handle:h-24 group-hover/handle:w-2 flex items-center justify-center border border-white/50">
+                              <div className="w-0.5 h-8 bg-white rounded-full" />
+                            </div>
+                          </div>
+
+                          {/* BOTTOM BORDER */}
+                          <div
+                            onMouseDown={(e) => startBorderResize(e, id, 'vertical')}
+                            onDragStart={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleWidgetHeight(id);
+                            }}
+                            className="absolute -bottom-2 left-3 right-3 h-4 cursor-ns-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center group/handle"
+                            title="Click or drag bottom border to adjust height density"
+                          >
+                            <div className="h-1.5 w-16 bg-blue-600/80 group-hover/handle:bg-blue-600 rounded-full shadow-md transition-all group-hover/handle:w-24 group-hover/handle:h-2 flex items-center justify-center border border-white/50">
+                              <div className="h-0.5 w-8 bg-white rounded-full" />
+                            </div>
+                          </div>
+
+                          {/* TOP BORDER */}
+                          <div
+                            onMouseDown={(e) => startBorderResize(e, id, 'vertical')}
+                            onDragStart={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleWidgetHeight(id);
+                            }}
+                            className="absolute -top-2 left-3 right-3 h-4 cursor-ns-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center group/handle"
+                            title="Click or drag top border to adjust height density"
+                          >
+                            <div className="h-1.5 w-16 bg-blue-600/80 group-hover/handle:bg-blue-600 rounded-full shadow-md transition-all group-hover/handle:w-24 group-hover/handle:h-2 flex items-center justify-center border border-white/50">
+                              <div className="h-0.5 w-8 bg-white rounded-full" />
+                            </div>
+                          </div>
+
+                          {/* BOTTOM-RIGHT CORNER HANDLE */}
+                          <div
+                            onMouseDown={(e) => startBorderResize(e, id, 'both')}
+                            onDragStart={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleWidgetSpan(id);
+                              handleToggleWidgetHeight(id);
+                            }}
+                            className="absolute -right-2 -bottom-2 w-6 h-6 cursor-nwse-resize z-40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center bg-blue-600 text-white rounded-full shadow-lg hover:scale-125 border-2 border-white"
+                            title="Click or drag corner to extend width & height simultaneously"
+                          >
+                            <Maximize2 className="w-3 h-3" />
+                          </div>
+
+                          {/* INNER CARD CONTENT WITH SMOOTH HEIGHT TRANSITION */}
+                          <div className={`w-full transition-all duration-500 ease-in-out ${heightClass}`}>
+                            {widgetContent}
+                          </div>
                         </div>
                       );
                     })}
