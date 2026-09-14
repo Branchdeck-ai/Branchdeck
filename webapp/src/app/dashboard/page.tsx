@@ -2624,11 +2624,6 @@ export default function ClientDashboard() {
                         span === 2 ? 'col-span-1 md:col-span-2 lg:col-span-2' :
                         'col-span-1';
 
-                      const heightClass =
-                        height === 'compact' ? 'max-h-[300px] overflow-hidden' :
-                        height === 'expanded' ? 'min-h-[500px]' :
-                        'min-h-[340px]';
-
                       const widgetContent = (() => {
                         switch (id) {
                           case 'metrics_grid':
@@ -2813,27 +2808,21 @@ export default function ClientDashboard() {
                             setDraggedWidgetId(null);
                             setDropTargetWidgetId(null);
                           }}
-                          className={`group relative transition-all duration-500 ease-in-out transform-gpu ${spanClass} ${
+                          className={`group relative transition-all duration-300 ease-in-out ${spanClass} ${
                             isDragging ? 'opacity-40 scale-[0.98]' : 'opacity-100'
                           } ${
                             isDropTarget ? 'ring-2 ring-blue-500 ring-offset-2 rounded-2xl' : ''
                           }`}
                         >
-                          {/* Resizable Status Pill Badge on Hover */}
-                          <div className="absolute top-2 right-12 z-20 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900/90 text-white text-[10px] font-mono px-2.5 py-0.5 rounded-full shadow-md pointer-events-none flex items-center gap-1.5 backdrop-blur-xs">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            <span>{span} Col{span > 1 ? 's' : ''} • {height.toUpperCase()}</span>
+                          {/* Drag reorder pill - subtle hover pill inside top left */}
+                          <div className="absolute top-2.5 left-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-slate-100/90 text-slate-500 hover:text-slate-800 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs pointer-events-auto cursor-grab active:cursor-grabbing">
+                            <GripVertical className="w-3 h-3 text-slate-400" />
+                            <span>Drag</span>
                           </div>
 
-                          {/* Drag indicator pill on hover */}
-                          <div className="absolute top-2 left-1/2 -translate-x-1/2 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-slate-800/80 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full cursor-grab active:cursor-grabbing shadow-sm pointer-events-auto">
-                            <GripVertical className="w-3 h-3 text-slate-300" />
-                            <span>Drag to reorder</span>
-                          </div>
+                          {/* ── SLEEK INSIDE BORDER & CORNER RESIZE HANDLES ── */}
 
-                          {/* ── 4 BORDER & CORNER RESIZE HANDLES WITH DRAG & CLICK ── */}
-
-                          {/* RIGHT BORDER */}
+                          {/* RIGHT BORDER HANDLE */}
                           <div
                             onMouseDown={(e) => startBorderResize(e, id, 'horizontal')}
                             onDragStart={(e) => e.stopPropagation()}
@@ -2841,15 +2830,13 @@ export default function ClientDashboard() {
                               e.stopPropagation();
                               handleToggleWidgetSpan(id);
                             }}
-                            className="absolute -right-2 top-3 bottom-3 w-4 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center group/handle"
-                            title="Click or drag right border to extend/contract column width"
+                            className="absolute right-0 top-3 bottom-3 w-3 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-end group/handle"
+                            title={span >= 2 ? "Click to contract column width" : "Click to extend to 2 columns"}
                           >
-                            <div className="w-1.5 h-16 bg-blue-600/80 group-hover/handle:bg-blue-600 rounded-full shadow-md transition-all group-hover/handle:h-24 group-hover/handle:w-2 flex items-center justify-center border border-white/50">
-                              <div className="w-0.5 h-8 bg-white rounded-full" />
-                            </div>
+                            <div className="w-1.5 h-12 bg-blue-600 rounded-l-full shadow-xs transition-all group-hover/handle:w-2 group-hover/handle:bg-blue-700" />
                           </div>
 
-                          {/* LEFT BORDER */}
+                          {/* LEFT BORDER HANDLE */}
                           <div
                             onMouseDown={(e) => startBorderResize(e, id, 'horizontal')}
                             onDragStart={(e) => e.stopPropagation()}
@@ -2857,15 +2844,13 @@ export default function ClientDashboard() {
                               e.stopPropagation();
                               handleToggleWidgetSpan(id);
                             }}
-                            className="absolute -left-2 top-3 bottom-3 w-4 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center group/handle"
-                            title="Click or drag left border to extend/contract column width"
+                            className="absolute left-0 top-3 bottom-3 w-3 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-start group/handle"
+                            title={span >= 2 ? "Click to contract column width" : "Click to extend to 2 columns"}
                           >
-                            <div className="w-1.5 h-16 bg-blue-600/80 group-hover/handle:bg-blue-600 rounded-full shadow-md transition-all group-hover/handle:h-24 group-hover/handle:w-2 flex items-center justify-center border border-white/50">
-                              <div className="w-0.5 h-8 bg-white rounded-full" />
-                            </div>
+                            <div className="w-1.5 h-12 bg-blue-600 rounded-r-full shadow-xs transition-all group-hover/handle:w-2 group-hover/handle:bg-blue-700" />
                           </div>
 
-                          {/* BOTTOM BORDER */}
+                          {/* BOTTOM BORDER HANDLE */}
                           <div
                             onMouseDown={(e) => startBorderResize(e, id, 'vertical')}
                             onDragStart={(e) => e.stopPropagation()}
@@ -2873,28 +2858,10 @@ export default function ClientDashboard() {
                               e.stopPropagation();
                               handleToggleWidgetHeight(id);
                             }}
-                            className="absolute -bottom-2 left-3 right-3 h-4 cursor-ns-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center group/handle"
-                            title="Click or drag bottom border to adjust height density"
+                            className="absolute bottom-0 left-6 right-6 h-3 cursor-ns-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-end justify-center group/handle"
+                            title="Click to toggle card height density"
                           >
-                            <div className="h-1.5 w-16 bg-blue-600/80 group-hover/handle:bg-blue-600 rounded-full shadow-md transition-all group-hover/handle:w-24 group-hover/handle:h-2 flex items-center justify-center border border-white/50">
-                              <div className="h-0.5 w-8 bg-white rounded-full" />
-                            </div>
-                          </div>
-
-                          {/* TOP BORDER */}
-                          <div
-                            onMouseDown={(e) => startBorderResize(e, id, 'vertical')}
-                            onDragStart={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleWidgetHeight(id);
-                            }}
-                            className="absolute -top-2 left-3 right-3 h-4 cursor-ns-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center group/handle"
-                            title="Click or drag top border to adjust height density"
-                          >
-                            <div className="h-1.5 w-16 bg-blue-600/80 group-hover/handle:bg-blue-600 rounded-full shadow-md transition-all group-hover/handle:w-24 group-hover/handle:h-2 flex items-center justify-center border border-white/50">
-                              <div className="h-0.5 w-8 bg-white rounded-full" />
-                            </div>
+                            <div className="h-1.5 w-12 bg-blue-600 rounded-t-full shadow-xs transition-all group-hover/handle:h-2 group-hover/handle:bg-blue-700" />
                           </div>
 
                           {/* BOTTOM-RIGHT CORNER HANDLE */}
@@ -2904,16 +2871,15 @@ export default function ClientDashboard() {
                             onClick={(e) => {
                               e.stopPropagation();
                               handleToggleWidgetSpan(id);
-                              handleToggleWidgetHeight(id);
                             }}
-                            className="absolute -right-2 -bottom-2 w-6 h-6 cursor-nwse-resize z-40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center bg-blue-600 text-white rounded-full shadow-lg hover:scale-125 border-2 border-white"
-                            title="Click or drag corner to extend width & height simultaneously"
+                            className="absolute right-1.5 bottom-1.5 p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-all z-30"
+                            title="Click or drag corner to extend width"
                           >
                             <Maximize2 className="w-3 h-3" />
                           </div>
 
-                          {/* INNER CARD CONTENT WITH SMOOTH HEIGHT TRANSITION */}
-                          <div className={`w-full transition-all duration-500 ease-in-out ${heightClass}`}>
+                          {/* INNER CARD CONTENT */}
+                          <div className="w-full h-full">
                             {widgetContent}
                           </div>
                         </div>
