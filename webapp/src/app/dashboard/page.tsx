@@ -1600,6 +1600,68 @@ export default function ClientDashboard() {
   const [draggedWidgetId, setDraggedWidgetId] = useState<string | null>(null);
   const [dropTargetWidgetId, setDropTargetWidgetId] = useState<string | null>(null);
 
+  // Proximity & Velocity Auto-Scroll when dragging widgets near or past top/bottom viewport edges
+  useEffect(() => {
+    if (!draggedWidgetId) return;
+
+    let animId: number;
+    let currentY = -1;
+    let lastY = -1;
+    let lastTime = performance.now();
+    let yVelocity = 0;
+
+    const handleDragOver = (e: DragEvent) => {
+      const now = performance.now();
+      const dt = Math.max(1, now - lastTime);
+      if (lastY !== -1) {
+        yVelocity = (e.clientY - lastY) / dt;
+      }
+      lastY = e.clientY;
+      lastTime = now;
+      currentY = e.clientY;
+    };
+
+    const scrollLoop = () => {
+      if (currentY !== -1) {
+        const threshold = 220;
+        const viewportH = window.innerHeight;
+
+        if (currentY < threshold) {
+          const dist = threshold - currentY;
+          const ratio = Math.max(0, dist / threshold);
+          let speed = 8 + Math.pow(ratio, 2.2) * 110;
+
+          if (yVelocity < -0.2) {
+            speed += Math.min(40, Math.abs(yVelocity) * 15);
+          }
+
+          window.scrollBy({ top: -Math.round(speed), behavior: 'instant' });
+        } else if (currentY > viewportH - threshold) {
+          const dist = currentY - (viewportH - threshold);
+          const ratio = Math.max(0, dist / threshold);
+          let speed = 8 + Math.pow(ratio, 2.2) * 110;
+
+          if (yVelocity > 0.2) {
+            speed += Math.min(40, yVelocity * 15);
+          }
+
+          window.scrollBy({ top: Math.round(speed), behavior: 'instant' });
+        }
+      }
+      animId = requestAnimationFrame(scrollLoop);
+    };
+
+    window.addEventListener('dragover', handleDragOver, { capture: true, passive: true });
+    document.addEventListener('dragover', handleDragOver, { capture: true, passive: true });
+    animId = requestAnimationFrame(scrollLoop);
+
+    return () => {
+      window.removeEventListener('dragover', handleDragOver, { capture: true });
+      document.removeEventListener('dragover', handleDragOver, { capture: true });
+      cancelAnimationFrame(animId);
+    };
+  }, [draggedWidgetId]);
+
   // Widget Column Span state (1, 2, or 3 columns) with local storage persistence
   const [widgetSpans, setWidgetSpans] = useState<Record<string, number>>(() => {
     if (typeof window !== 'undefined') {
@@ -1658,7 +1720,7 @@ export default function ClientDashboard() {
   };
 
   // Live border drag resizing state for continuous real-time widget width animation
-  const [resizingState, setResizingState] = useState<{ widgetId: string; widthPx?: number } | null>(null);
+  const [resizingState, setResizingState] = useState<{ widgetId: string; widthPx: number; isEnding?: boolean } | null>(null);
 
   const startBorderResize = (
     e: React.MouseEvent,
@@ -1669,38 +1731,114 @@ export default function ClientDashboard() {
     e.stopPropagation();
 
     const cardEl = (e.currentTarget as HTMLElement).closest('.widget-card-container') as HTMLElement | null;
-    const startWidth = cardEl ? cardEl.getBoundingClientRect().width : 360;
-    const startX = e.clientX;
+    if (!cardEl) return;
 
+    cardEl.setAttribute('draggable', 'false');
+
+    const gridEl = cardEl.parentElement;
+    const gridWidth = gridEl ? gridEl.getBoundingClientRect().width : 1100;
+    const viewportW = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const maxCols = viewportW >= 1024 ? 3 : viewportW >= 768 ? 2 : 1;
+    const gap = 16;
+    const colWidth = (gridWidth - (maxCols - 1) * gap) / maxCols;
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startWidth = cardEl.getBoundingClientRect().width;
     const initialSpan = widgetSpans[widgetId] || (widgetId === 'total_profit' ? 2 : 1);
-    let finalSpan = initialSpan;
+    const initialHeight = widgetHeights[widgetId] || 'standard';
+
+    setResizingState({ widgetId, widthPx: startWidth, isEnding: false });
+
+    let latestWidth = startWidth;
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       moveEvent.preventDefault();
       const dx = moveEvent.clientX - startX;
-
-      if (type === 'horizontal' || type === 'both') {
-        const liveWidth = Math.max(260, startWidth + dx);
-        setResizingState({ widgetId, widthPx: liveWidth });
-
-        if (dx > 60) finalSpan = Math.min(3, initialSpan + 1);
-        else if (dx < -60) finalSpan = Math.max(1, initialSpan - 1);
-        else finalSpan = initialSpan;
-      }
+      const liveWidth = Math.max(280, Math.min(gridWidth, startWidth + dx));
+      latestWidth = liveWidth;
+      setResizingState({ widgetId, widthPx: liveWidth, isEnding: false });
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (upEvent: MouseEvent) => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
 
-      if (finalSpan !== initialSpan) {
-        setWidgetSpans(prev => {
-          const updated = { ...prev, [widgetId]: finalSpan };
-          if (typeof window !== 'undefined') localStorage.setItem('branchdeck_widget_spans', JSON.stringify(updated));
-          return updated;
-        });
+      if (cardEl) {
+        cardEl.setAttribute('draggable', 'true');
       }
-      setResizingState(null);
+
+      const dx = upEvent.clientX - startX;
+      const dy = upEvent.clientY - startY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 8) {
+        // Simple click on border handle
+        if (type === 'vertical') {
+          handleToggleWidgetHeight(widgetId);
+          setResizingState(null);
+        } else {
+          const nextSpan = initialSpan === 1 ? 2 : initialSpan === 2 ? 3 : 1;
+          const clampedNext = Math.min(nextSpan, maxCols);
+          const targetWidthPx = clampedNext * colWidth + (clampedNext - 1) * gap;
+
+          setWidgetSpans(prev => {
+            const updated = { ...prev, [widgetId]: clampedNext };
+            if (typeof window !== 'undefined') localStorage.setItem('branchdeck_widget_spans', JSON.stringify(updated));
+            return updated;
+          });
+
+          setResizingState({ widgetId, widthPx: targetWidthPx, isEnding: true });
+          setTimeout(() => {
+            setResizingState(null);
+          }, 300);
+        }
+      } else {
+        // Drag Resize
+        if (type === 'vertical') {
+          if (dy > 40 && initialHeight !== 'expanded') {
+            handleToggleWidgetHeight(widgetId);
+          } else if (dy < -40 && initialHeight !== 'compact') {
+            handleToggleWidgetHeight(widgetId);
+          }
+          setResizingState(null);
+        } else {
+          let targetSpan = 1;
+          const col1Threshold = colWidth * 1.35;
+          const col2Threshold = colWidth * 2.35;
+
+          if (latestWidth > col2Threshold) {
+            targetSpan = 3;
+          } else if (latestWidth > col1Threshold) {
+            targetSpan = 2;
+          } else {
+            targetSpan = 1;
+          }
+
+          const clampedTargetSpan = Math.min(targetSpan, maxCols);
+          const targetWidthPx = clampedTargetSpan * colWidth + (clampedTargetSpan - 1) * gap;
+
+          setWidgetSpans(prev => {
+            const updated = { ...prev, [widgetId]: clampedTargetSpan };
+            if (typeof window !== 'undefined') localStorage.setItem('branchdeck_widget_spans', JSON.stringify(updated));
+            return updated;
+          });
+
+          if (type === 'both') {
+            if (dy > 40 && initialHeight !== 'expanded') {
+              setWidgetHeights(prev => ({ ...prev, [widgetId]: 'expanded' }));
+            } else if (dy < -40 && initialHeight !== 'compact') {
+              setWidgetHeights(prev => ({ ...prev, [widgetId]: 'compact' }));
+            }
+          }
+
+          // Smooth 300ms transition to exact target column width
+          setResizingState({ widgetId, widthPx: targetWidthPx, isEnding: true });
+          setTimeout(() => {
+            setResizingState(null);
+          }, 300);
+        }
+      }
     };
 
     window.addEventListener('mousemove', onMouseMove);
@@ -2795,18 +2933,18 @@ export default function ClientDashboard() {
                             setDropTargetWidgetId(null);
                           }}
                           className={`widget-card-container group relative ${spanClass} ${
-                            isResizingThis
-                              ? 'ring-2 ring-blue-500 shadow-2xl scale-[1.008] z-40'
-                              : 'transition-all duration-500 ease-out transform-gpu'
-                          } ${
                             isDragging ? 'opacity-40 scale-[0.98]' : 'opacity-100'
                           } ${
-                            isDropTarget ? 'ring-2 ring-blue-500 ring-offset-2 rounded-2xl' : ''
+                            isDropTarget ? 'ring-2 ring-blue-500/50 ring-offset-2 rounded-2xl' : ''
                           }`}
                           style={
                             isResizingThis && resizingState?.widthPx
-                              ? { width: `${resizingState.widthPx}px`, maxWidth: '100%', transition: 'none' }
-                              : undefined
+                              ? {
+                                  width: `${resizingState.widthPx}px`,
+                                  maxWidth: '100%',
+                                  transition: resizingState.isEnding ? 'width 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                                }
+                              : { transition: 'all 500ms cubic-bezier(0.4, 0, 0.2, 1)' }
                           }
                         >
                           {/* Drag reorder pill - subtle hover pill inside top left */}
@@ -2815,63 +2953,41 @@ export default function ClientDashboard() {
                             <span>Drag</span>
                           </div>
 
-                          {/* ── CONDITIONAL SLEEK RESIZE HANDLES (ONLY FOR EXTENSIBLE WIDGETS) ── */}
+                          {/* ── BORDERLESS RESIZE HANDLES (ONLY FOR EXTENSIBLE WIDGETS) ── */}
                           {isExtensible && (
                             <>
-                              {/* RIGHT BORDER HANDLE */}
+                              {/* RIGHT EDGE CLICK & DRAG HITBOX */}
                               <div
                                 onMouseDown={(e) => startBorderResize(e, id, 'horizontal')}
                                 onDragStart={(e) => e.stopPropagation()}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleWidgetSpan(id);
-                                }}
-                                className="absolute right-0 top-3 bottom-3 w-3 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-end group/handle"
-                                title={span >= 2 ? "Click to contract column width" : "Click to extend to 2 columns"}
-                              >
-                                <div className="w-1.5 h-12 bg-blue-600 rounded-l-full shadow-xs transition-all group-hover/handle:w-2.5 group-hover/handle:bg-blue-700" />
-                              </div>
+                                className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize z-30 hover:bg-blue-500/10 transition-colors rounded-r-2xl"
+                                title={span >= 2 ? "Click or drag edge to contract column width" : "Click or drag edge to extend to 2 columns"}
+                              />
 
-                              {/* LEFT BORDER HANDLE */}
+                              {/* LEFT EDGE CLICK & DRAG HITBOX */}
                               <div
                                 onMouseDown={(e) => startBorderResize(e, id, 'horizontal')}
                                 onDragStart={(e) => e.stopPropagation()}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleWidgetSpan(id);
-                                }}
-                                className="absolute left-0 top-3 bottom-3 w-3 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-start group/handle"
-                                title={span >= 2 ? "Click to contract column width" : "Click to extend to 2 columns"}
-                              >
-                                <div className="w-1.5 h-12 bg-blue-600 rounded-r-full shadow-xs transition-all group-hover/handle:w-2.5 group-hover/handle:bg-blue-700" />
-                              </div>
+                                className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize z-30 hover:bg-blue-500/10 transition-colors rounded-l-2xl"
+                                title={span >= 2 ? "Click or drag edge to contract column width" : "Click or drag edge to extend to 2 columns"}
+                              />
 
-                              {/* BOTTOM BORDER HANDLE */}
+                              {/* BOTTOM EDGE CLICK & DRAG HITBOX */}
                               <div
                                 onMouseDown={(e) => startBorderResize(e, id, 'vertical')}
                                 onDragStart={(e) => e.stopPropagation()}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleWidgetHeight(id);
-                                }}
-                                className="absolute bottom-0 left-6 right-6 h-3 cursor-ns-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-end justify-center group/handle"
-                                title="Click to toggle card height density"
-                              >
-                                <div className="h-1.5 w-12 bg-blue-600 rounded-t-full shadow-xs transition-all group-hover/handle:h-2.5 group-hover/handle:bg-blue-700" />
-                              </div>
+                                className="absolute bottom-0 left-4 right-4 h-3 cursor-ns-resize z-30 hover:bg-blue-500/10 transition-colors rounded-b-2xl"
+                                title="Click or drag bottom edge to adjust height density"
+                              />
 
-                              {/* BOTTOM-RIGHT CORNER HANDLE */}
+                              {/* BOTTOM-RIGHT CORNER ICON */}
                               <div
                                 onMouseDown={(e) => startBorderResize(e, id, 'both')}
                                 onDragStart={(e) => e.stopPropagation()}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleToggleWidgetSpan(id);
-                                }}
-                                className="absolute right-1.5 bottom-1.5 p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-all z-30"
+                                className="absolute right-2 bottom-2 p-1 text-slate-300 hover:text-blue-600 rounded-md cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-all z-30"
                                 title="Click or drag corner to extend width"
                               >
-                                <Maximize2 className="w-3 h-3" />
+                                <Maximize2 className="w-3.5 h-3.5" />
                               </div>
                             </>
                           )}
