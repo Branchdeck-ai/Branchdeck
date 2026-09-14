@@ -1657,6 +1657,9 @@ export default function ClientDashboard() {
     });
   };
 
+  // Live border drag resizing state for continuous real-time widget width animation
+  const [resizingState, setResizingState] = useState<{ widgetId: string; widthPx?: number } | null>(null);
+
   const startBorderResize = (
     e: React.MouseEvent,
     widgetId: string,
@@ -1665,54 +1668,39 @@ export default function ClientDashboard() {
     e.preventDefault();
     e.stopPropagation();
 
+    const cardEl = (e.currentTarget as HTMLElement).closest('.widget-card-container') as HTMLElement | null;
+    const startWidth = cardEl ? cardEl.getBoundingClientRect().width : 360;
     const startX = e.clientX;
-    const startY = e.clientY;
 
     const initialSpan = widgetSpans[widgetId] || (widgetId === 'total_profit' ? 2 : 1);
-    const initialHeight = widgetHeights[widgetId] || 'standard';
-
-    let lastSpan = initialSpan;
-    let lastHeight = initialHeight;
+    let finalSpan = initialSpan;
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       moveEvent.preventDefault();
       const dx = moveEvent.clientX - startX;
-      const dy = moveEvent.clientY - startY;
 
       if (type === 'horizontal' || type === 'both') {
-        let targetSpan = initialSpan;
-        if (dx > 40) targetSpan = Math.min(3, initialSpan + 1);
-        else if (dx < -40) targetSpan = Math.max(1, initialSpan - 1);
+        const liveWidth = Math.max(260, startWidth + dx);
+        setResizingState({ widgetId, widthPx: liveWidth });
 
-        if (targetSpan !== lastSpan) {
-          lastSpan = targetSpan;
-          setWidgetSpans(prev => {
-            const updated = { ...prev, [widgetId]: targetSpan };
-            if (typeof window !== 'undefined') localStorage.setItem('branchdeck_widget_spans', JSON.stringify(updated));
-            return updated;
-          });
-        }
-      }
-
-      if (type === 'vertical' || type === 'both') {
-        let targetHeight: 'compact' | 'standard' | 'expanded' = initialHeight;
-        if (dy > 40) targetHeight = 'expanded';
-        else if (dy < -40) targetHeight = 'compact';
-
-        if (targetHeight !== lastHeight) {
-          lastHeight = targetHeight;
-          setWidgetHeights(prev => {
-            const updated = { ...prev, [widgetId]: targetHeight };
-            if (typeof window !== 'undefined') localStorage.setItem('branchdeck_widget_heights', JSON.stringify(updated));
-            return updated;
-          });
-        }
+        if (dx > 60) finalSpan = Math.min(3, initialSpan + 1);
+        else if (dx < -60) finalSpan = Math.max(1, initialSpan - 1);
+        else finalSpan = initialSpan;
       }
     };
 
     const onMouseUp = () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+
+      if (finalSpan !== initialSpan) {
+        setWidgetSpans(prev => {
+          const updated = { ...prev, [widgetId]: finalSpan };
+          if (typeof window !== 'undefined') localStorage.setItem('branchdeck_widget_spans', JSON.stringify(updated));
+          return updated;
+        });
+      }
+      setResizingState(null);
     };
 
     window.addEventListener('mousemove', onMouseMove);
@@ -2772,6 +2760,7 @@ export default function ClientDashboard() {
 
                       if (!widgetContent) return null;
                       const isExtensible = id !== 'visitors_by_device' && id !== 'repeat_customer_rate';
+                      const isResizingThis = resizingState?.widgetId === id;
 
                       return (
                         <div
@@ -2805,11 +2794,20 @@ export default function ClientDashboard() {
                             setDraggedWidgetId(null);
                             setDropTargetWidgetId(null);
                           }}
-                          className={`group relative transition-all duration-500 ease-out transform-gpu ${spanClass} ${
+                          className={`widget-card-container group relative ${spanClass} ${
+                            isResizingThis
+                              ? 'ring-2 ring-blue-500 shadow-2xl scale-[1.008] z-40'
+                              : 'transition-all duration-500 ease-out transform-gpu'
+                          } ${
                             isDragging ? 'opacity-40 scale-[0.98]' : 'opacity-100'
                           } ${
                             isDropTarget ? 'ring-2 ring-blue-500 ring-offset-2 rounded-2xl' : ''
                           }`}
+                          style={
+                            isResizingThis && resizingState?.widthPx
+                              ? { width: `${resizingState.widthPx}px`, maxWidth: '100%', transition: 'none' }
+                              : undefined
+                          }
                         >
                           {/* Drag reorder pill - subtle hover pill inside top left */}
                           <div className="absolute top-2.5 left-3 z-20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-slate-100/90 text-slate-500 hover:text-slate-800 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs pointer-events-auto cursor-grab active:cursor-grabbing">
