@@ -2698,10 +2698,8 @@ export default function ClientDashboard() {
                                 integrations={integrations}
                                 isDemoMode={isDemoMode}
                                 range={range}
-                                span={span}
-                                height={height}
-                                onToggleSpan={handleToggleWidgetSpan}
-                                onToggleHeight={handleToggleWidgetHeight}
+                                span={1}
+                                height="standard"
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2727,10 +2725,8 @@ export default function ClientDashboard() {
                                 summary={summary}
                                 isDemoMode={isDemoMode}
                                 range={range}
-                                span={span}
-                                height={height}
-                                onToggleSpan={handleToggleWidgetSpan}
-                                onToggleHeight={handleToggleWidgetHeight}
+                                span={1}
+                                height="standard"
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2775,6 +2771,7 @@ export default function ClientDashboard() {
                       })();
 
                       if (!widgetContent) return null;
+                      const isExtensible = id !== 'visitors_by_device' && id !== 'repeat_customer_rate';
 
                       return (
                         <div
@@ -2808,7 +2805,7 @@ export default function ClientDashboard() {
                             setDraggedWidgetId(null);
                             setDropTargetWidgetId(null);
                           }}
-                          className={`group relative transition-all duration-300 ease-in-out ${spanClass} ${
+                          className={`group relative transition-all duration-500 ease-out transform-gpu ${spanClass} ${
                             isDragging ? 'opacity-40 scale-[0.98]' : 'opacity-100'
                           } ${
                             isDropTarget ? 'ring-2 ring-blue-500 ring-offset-2 rounded-2xl' : ''
@@ -2820,63 +2817,66 @@ export default function ClientDashboard() {
                             <span>Drag</span>
                           </div>
 
-                          {/* ── SLEEK INSIDE BORDER & CORNER RESIZE HANDLES ── */}
+                          {/* ── CONDITIONAL SLEEK RESIZE HANDLES (ONLY FOR EXTENSIBLE WIDGETS) ── */}
+                          {isExtensible && (
+                            <>
+                              {/* RIGHT BORDER HANDLE */}
+                              <div
+                                onMouseDown={(e) => startBorderResize(e, id, 'horizontal')}
+                                onDragStart={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleWidgetSpan(id);
+                                }}
+                                className="absolute right-0 top-3 bottom-3 w-3 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-end group/handle"
+                                title={span >= 2 ? "Click to contract column width" : "Click to extend to 2 columns"}
+                              >
+                                <div className="w-1.5 h-12 bg-blue-600 rounded-l-full shadow-xs transition-all group-hover/handle:w-2.5 group-hover/handle:bg-blue-700" />
+                              </div>
 
-                          {/* RIGHT BORDER HANDLE */}
-                          <div
-                            onMouseDown={(e) => startBorderResize(e, id, 'horizontal')}
-                            onDragStart={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleWidgetSpan(id);
-                            }}
-                            className="absolute right-0 top-3 bottom-3 w-3 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-end group/handle"
-                            title={span >= 2 ? "Click to contract column width" : "Click to extend to 2 columns"}
-                          >
-                            <div className="w-1.5 h-12 bg-blue-600 rounded-l-full shadow-xs transition-all group-hover/handle:w-2 group-hover/handle:bg-blue-700" />
-                          </div>
+                              {/* LEFT BORDER HANDLE */}
+                              <div
+                                onMouseDown={(e) => startBorderResize(e, id, 'horizontal')}
+                                onDragStart={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleWidgetSpan(id);
+                                }}
+                                className="absolute left-0 top-3 bottom-3 w-3 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-start group/handle"
+                                title={span >= 2 ? "Click to contract column width" : "Click to extend to 2 columns"}
+                              >
+                                <div className="w-1.5 h-12 bg-blue-600 rounded-r-full shadow-xs transition-all group-hover/handle:w-2.5 group-hover/handle:bg-blue-700" />
+                              </div>
 
-                          {/* LEFT BORDER HANDLE */}
-                          <div
-                            onMouseDown={(e) => startBorderResize(e, id, 'horizontal')}
-                            onDragStart={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleWidgetSpan(id);
-                            }}
-                            className="absolute left-0 top-3 bottom-3 w-3 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-start group/handle"
-                            title={span >= 2 ? "Click to contract column width" : "Click to extend to 2 columns"}
-                          >
-                            <div className="w-1.5 h-12 bg-blue-600 rounded-r-full shadow-xs transition-all group-hover/handle:w-2 group-hover/handle:bg-blue-700" />
-                          </div>
+                              {/* BOTTOM BORDER HANDLE */}
+                              <div
+                                onMouseDown={(e) => startBorderResize(e, id, 'vertical')}
+                                onDragStart={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleWidgetHeight(id);
+                                }}
+                                className="absolute bottom-0 left-6 right-6 h-3 cursor-ns-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-end justify-center group/handle"
+                                title="Click to toggle card height density"
+                              >
+                                <div className="h-1.5 w-12 bg-blue-600 rounded-t-full shadow-xs transition-all group-hover/handle:h-2.5 group-hover/handle:bg-blue-700" />
+                              </div>
 
-                          {/* BOTTOM BORDER HANDLE */}
-                          <div
-                            onMouseDown={(e) => startBorderResize(e, id, 'vertical')}
-                            onDragStart={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleWidgetHeight(id);
-                            }}
-                            className="absolute bottom-0 left-6 right-6 h-3 cursor-ns-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-end justify-center group/handle"
-                            title="Click to toggle card height density"
-                          >
-                            <div className="h-1.5 w-12 bg-blue-600 rounded-t-full shadow-xs transition-all group-hover/handle:h-2 group-hover/handle:bg-blue-700" />
-                          </div>
-
-                          {/* BOTTOM-RIGHT CORNER HANDLE */}
-                          <div
-                            onMouseDown={(e) => startBorderResize(e, id, 'both')}
-                            onDragStart={(e) => e.stopPropagation()}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleWidgetSpan(id);
-                            }}
-                            className="absolute right-1.5 bottom-1.5 p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-all z-30"
-                            title="Click or drag corner to extend width"
-                          >
-                            <Maximize2 className="w-3 h-3" />
-                          </div>
+                              {/* BOTTOM-RIGHT CORNER HANDLE */}
+                              <div
+                                onMouseDown={(e) => startBorderResize(e, id, 'both')}
+                                onDragStart={(e) => e.stopPropagation()}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleToggleWidgetSpan(id);
+                                }}
+                                className="absolute right-1.5 bottom-1.5 p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-all z-30"
+                                title="Click or drag corner to extend width"
+                              >
+                                <Maximize2 className="w-3 h-3" />
+                              </div>
+                            </>
+                          )}
 
                           {/* INNER CARD CONTENT */}
                           <div className="w-full h-full">
