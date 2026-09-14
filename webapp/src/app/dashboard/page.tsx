@@ -2629,141 +2629,17 @@ export default function ClientDashboard() {
                 )}
               </div>
 
-              {/* KPI Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <KpiCard
-                  label="Active Integrations"
-                  value={String(activeCount)}
-                  sub={`${integrations.length} total integrated`}
-                  icon={<Cpu className="w-5 h-5" />}
-                  accentColor="text-blue-600"
-                  bgColor="bg-blue-50"
-                />
-                <KpiCard
-                  label="Requests This Period"
-                  value={fmt(summary?.total_calls ?? 0)}
-                  sub={`${rangeDays(range)}-day window`}
-                  icon={<Activity className="w-5 h-5" />}
-                  accentColor="text-violet-600"
-                  bgColor="bg-violet-50"
-                />
-                <KpiCard
-                  label="Spend This Period"
-                  value={fmtUSD(summary?.cost_usd ?? 0)}
-                  sub={`of ${fmtUSD(budgetCap)} cap · ${Math.round(utilizationPct * 100)}%`}
-                  icon={<DollarSign className="w-5 h-5" />}
-                  accentColor={utilizationPct > 0.9 ? 'text-red-600' : 'text-emerald-600'}
-                  bgColor={utilizationPct > 0.9 ? 'bg-red-50' : 'bg-emerald-50'}
-                />
-                <KpiCard
-                  label="Avg Latency"
-                  value={summary?.avg_latency_ms != null && (summary?.total_calls ?? 0) > 0 ? `${Math.round(summary.avg_latency_ms)}ms` : '0ms'}
-                  sub="mean response latency"
-                  icon={<Clock className="w-5 h-5" />}
-                  accentColor="text-amber-600"
-                  bgColor="bg-amber-50"
-                />
-              </div>
-
-              {/* Middle Row: Spend Chart + Budget Gauge */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                {/* Cost Chart */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900 tracking-tight">Spend Over Time</p>
-                      <p className="text-xs text-slate-500 mt-0.5 font-medium">Daily API USD cost · {range === 'mtd' ? 'Month to date' : `Last ${range}`}</p>
-                    </div>
-                    <TrendingUp className="w-4 h-4 text-blue-600" />
-                  </div>
-                  {loading ? (
-                    <div className="h-40 animate-pulse bg-slate-100 rounded-xl" />
-                  ) : summary?.daily?.some(d => d.cost_usd > 0) ? (
-                    <CostChart daily={summary.daily} />
-                  ) : (
-                    <div className="h-40 flex flex-col items-center justify-center text-center p-6 bg-slate-50/60 border border-dashed border-slate-200 rounded-xl">
-                      <TrendingUp className="w-8 h-8 text-slate-300 mb-2" />
-                      <p className="text-xs font-bold text-slate-700">No Spend Activity Recorded</p>
-                      <p className="text-[11px] text-slate-500 max-w-sm mt-1">
-                        Connect a repository and request your first AI feature to see daily API cost metrics here.
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {/* Gauge */}
-                <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 flex flex-col items-center justify-between">
-                  <div className="w-full">
-                    <p className="text-sm font-bold text-slate-900 tracking-tight">Budget Utilization</p>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">Spend vs. monthly cap</p>
-                  </div>
-                  {loading ? (
-                    <div className="w-full h-24 animate-pulse bg-slate-100 rounded-xl mt-4" />
-                  ) : (
-                    <GaugeArc pct={utilizationPct} />
-                  )}
-                  <div className="w-full text-center mt-2 pt-2 border-t border-slate-100">
-                    <p className="text-xs text-slate-600 font-medium">
-                      <span className="font-mono font-bold text-slate-900">{fmtUSD(summary?.cost_usd ?? 0)}</span>
-                      {' '}/ {fmtUSD(budgetCap)} cap
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Row: Breakdown + Table */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                {/* Spend by Type */}
-                <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
+              {/* ── Active AI Integrations Table ── */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                   <div>
-                    <p className="text-sm font-bold text-slate-900 tracking-tight">Spend by Feature Type</p>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">Cost distribution across active capabilities</p>
+                    <p className="text-sm font-bold text-slate-900 tracking-tight">Active AI Integrations</p>
+                    <p className="text-xs text-slate-500 mt-0.5 font-medium">Feature name · AST match · PR status · requests · cost</p>
                   </div>
-                  {loading ? (
-                    <div className="space-y-2">
-                      {[1, 2, 3].map(i => <div key={i} className="h-4 animate-pulse bg-slate-100 rounded" />)}
-                    </div>
-                  ) : typeBreakdown.length === 0 ? (
-                    <p className="text-xs text-slate-400">No cost data in range</p>
-                  ) : (
-                    <>
-                      <SegmentedBar items={typeBreakdown} />
-                      <div className="space-y-2.5 mt-3">
-                        {typeBreakdown.map(item => {
-                          const cols = TYPE_COLORS[item.type] ?? { bg: 'bg-slate-50', text: 'text-slate-700' };
-                          const tokenSum = summary?.per_integration
-                            .filter(p => p.type === item.type)
-                            .reduce((s, p) => s + p.tokens, 0) ?? 0;
-                          return (
-                            <div key={item.type} className={`${cols.bg} rounded-xl px-3.5 py-2.5 flex items-center justify-between border border-slate-100`}>
-                              <div>
-                                <p className={`text-xs font-bold ${cols.text}`}>{item.label}</p>
-                                <p className="text-[10px] text-slate-500 font-mono mt-0.5">{fmt(tokenSum)} tokens</p>
-                              </div>
-                              <p className="text-sm font-bold text-slate-900 font-mono">{fmtUSD(item.value)}</p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                      <div className="pt-3 border-t border-slate-100">
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1">Daily Trend</p>
-                        <Sparkline data={summary?.daily.map(d => d.cost_usd) ?? []} color="#1a73e8" />
-                      </div>
-                    </>
-                  )}
+                  <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
+                    {integrations.length} integrations
+                  </span>
                 </div>
-
-                {/* Integrations Table */}
-                <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
-                  <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900 tracking-tight">Active AI Integrations</p>
-                      <p className="text-xs text-slate-500 mt-0.5 font-medium">Feature name · AST match · PR status · requests · cost</p>
-                    </div>
-                    <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">
-                      {integrations.length} integrations
-                    </span>
-                  </div>
 
                   {loading ? (
                     <div className="p-6 space-y-3">
@@ -2861,7 +2737,6 @@ export default function ClientDashboard() {
                     </div>
                   )}
                 </div>
-              </div>
             </>
           )}
 
