@@ -49,6 +49,7 @@ import {
   Bell,
   Compass,
   Maximize2,
+  Minimize2,
   Package,
   MoreHorizontal,
   GripVertical,
@@ -686,12 +687,16 @@ function AddWidgetDrawer({
 
 function WidgetHeaderMenu({
   widgetId,
+  span = 1,
+  onToggleSpan,
   onRemove,
   onMoveUp,
   onMoveDown,
   onOpenAddDrawer,
 }: {
   widgetId: string;
+  span?: number;
+  onToggleSpan?: (id: string) => void;
   onRemove?: (id: string) => void;
   onMoveUp?: (id: string) => void;
   onMoveDown?: (id: string) => void;
@@ -734,6 +739,20 @@ function WidgetHeaderMenu({
           <div className="px-3 py-1.5 border-b border-slate-100 font-bold text-[10px] uppercase text-slate-400 tracking-wider">
             Widget Options
           </div>
+          {onToggleSpan && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleSpan(widgetId);
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-2 text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2 cursor-pointer"
+            >
+              {span === 2 ? <Minimize2 className="w-3.5 h-3.5 text-blue-600" /> : <Maximize2 className="w-3.5 h-3.5 text-blue-600" />}
+              <span>{span === 2 ? 'Contract (1 Col)' : 'Extend (2 Cols)'}</span>
+            </button>
+          )}
           {onMoveUp && (
             <button
               type="button"
@@ -802,7 +821,7 @@ function WidgetHeaderMenu({
 // ─── Individual Software Widget Components ─────────────────────────────────
 
 // 1. Quick 2x2 Software Telemetry Metrics Widget
-function WidgetMetricsGrid({ summary, integrations, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; integrations: Integration[]; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetMetricsGrid({ summary, integrations, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; integrations: Integration[]; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const days = rangeDays(range);
   const factor = days / 30;
   
@@ -830,7 +849,7 @@ function WidgetMetricsGrid({ summary, integrations, isDemoMode, range, onRemove,
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between border-b border-slate-100 pb-2">
         <span className="text-xs font-bold text-slate-800 uppercase tracking-wide">Software Telemetry Overview</span>
-        <WidgetHeaderMenu widgetId="metrics_grid" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="metrics_grid" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
       <div className="grid grid-cols-2 gap-3">
         {/* API Invocations */}
@@ -890,7 +909,7 @@ function WidgetMetricsGrid({ summary, integrations, isDemoMode, range, onRemove,
 }
 
 // 2. API Token Spend & Monthly Budget Widget
-function WidgetTotalProfit({ summary, budgetCap, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; budgetCap: number; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetTotalProfit({ summary, budgetCap, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; budgetCap: number; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const days = rangeDays(range);
   const factor = days / 30;
   const costVal = isDemoMode ? fmtUSD(446.70 * factor) : fmtUSD(summary?.cost_usd ?? 0);
@@ -919,7 +938,7 @@ function WidgetTotalProfit({ summary, budgetCap, isDemoMode, range, onRemove, on
             </span>
           </div>
         </div>
-        <WidgetHeaderMenu widgetId="total_profit" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="total_profit" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       <div className="relative pt-2">
@@ -930,7 +949,7 @@ function WidgetTotalProfit({ summary, budgetCap, isDemoMode, range, onRemove, on
 }
 
 // 3. AI Feature Capabilities Breakdown Widget
-function WidgetCustomerSegmentation({ summary, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetCustomerSegmentation({ summary, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const days = rangeDays(range);
   const factor = days / 30;
 
@@ -949,7 +968,7 @@ function WidgetCustomerSegmentation({ summary, isDemoMode, range, onRemove, onMo
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">AI Retainer Capabilities ({range.toUpperCase()})</h3>
-        <WidgetHeaderMenu widgetId="customers_segmentation" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="customers_segmentation" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       {items.length === 0 ? (
@@ -980,7 +999,7 @@ function WidgetCustomerSegmentation({ summary, isDemoMode, range, onRemove, onMo
 }
 
 // 4. Peak Developer & Webhook Activity Bar Chart Widget
-function WidgetMostDayActive({ summary, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetMostDayActive({ summary, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const days = isDemoMode ? (() => {
     const factor = rangeDays(range) / 30;
     return [
@@ -1018,7 +1037,7 @@ function WidgetMostDayActive({ summary, isDemoMode, range, onRemove, onMoveUp, o
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">Peak Retainer Activity ({range.toUpperCase()})</h3>
-        <WidgetHeaderMenu widgetId="most_day_active" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="most_day_active" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       <div className="pt-6 pb-2">
@@ -1053,7 +1072,7 @@ function WidgetMostDayActive({ summary, isDemoMode, range, onRemove, onMoveUp, o
 }
 
 // 5. AST Code Health & Pattern Match Gauge Widget
-function WidgetRepeatCustomerRate({ integrations, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { integrations: Integration[]; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetRepeatCustomerRate({ integrations, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { integrations: Integration[]; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const avgAst = isDemoMode ? (range === '7d' ? 99.7 : range === 'mtd' ? 99.5 : 99.4) : (integrations.length > 0
     ? (integrations.reduce((sum, i) => sum + astScorePct(i.ast_match_score), 0) / integrations.length)
     : 0);
@@ -1066,7 +1085,7 @@ function WidgetRepeatCustomerRate({ integrations, isDemoMode, range, onRemove, o
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4 flex flex-col items-center text-center">
       <div className="w-full flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">AST Codebase Health</h3>
-        <WidgetHeaderMenu widgetId="repeat_customer_rate" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="repeat_customer_rate" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       <div className="relative py-2 w-44">
@@ -1102,7 +1121,7 @@ function WidgetRepeatCustomerRate({ integrations, isDemoMode, range, onRemove, o
 }
 
 // 6. Branchdeck AI Code Assistant Widget
-function WidgetAiAssistant({ onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetAiAssistant({ span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const [prompt, setPrompt] = useState('');
   const [response, setResponse] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
@@ -1127,7 +1146,7 @@ function WidgetAiAssistant({ onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: 
           </div>
           <h3 className="text-sm font-bold text-slate-900">Branchdeck AI Assistant</h3>
         </div>
-        <WidgetHeaderMenu widgetId="ai_assistant" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="ai_assistant" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       <div className="relative">
@@ -1180,7 +1199,7 @@ function WidgetAiAssistant({ onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: 
 }
 
 // 7. AI Model Invocations Widget
-function WidgetVisitorsByDevice({ summary, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetVisitorsByDevice({ summary, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const factor = rangeDays(range) / 30;
   const totalCalls = isDemoMode ? fmt(Math.round(16431 * factor)) : fmt(summary?.total_calls ?? 0);
   const hasCalls = isDemoMode || (summary?.total_calls ?? 0) > 0;
@@ -1189,7 +1208,7 @@ function WidgetVisitorsByDevice({ summary, isDemoMode, range, onRemove, onMoveUp
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">AI Model Invocations ({range.toUpperCase()})</h3>
-        <WidgetHeaderMenu widgetId="visitors_by_device" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="visitors_by_device" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
 
       <div className="flex items-center gap-6">
@@ -1224,7 +1243,7 @@ function WidgetVisitorsByDevice({ summary, isDemoMode, range, onRemove, onMoveUp
 }
 
 // 8. GitHub PR Velocity Widget
-function WidgetOrdersPerformance({ integrations, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { integrations: Integration[]; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetOrdersPerformance({ integrations, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { integrations: Integration[]; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const factor = rangeDays(range) / 30;
   const mergedCount = isDemoMode ? Math.max(1, Math.round(14 * factor)) : integrations.filter(i => i.status === 'merged').length;
   const activePRs = isDemoMode ? Math.max(1, Math.round(3 * factor)) : integrations.filter(i => i.status === 'pr_ready' || i.status === 'in_progress').length;
@@ -1234,7 +1253,7 @@ function WidgetOrdersPerformance({ integrations, isDemoMode, range, onRemove, on
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">GitHub PR Velocity ({range.toUpperCase()})</h3>
-        <WidgetHeaderMenu widgetId="orders_performance" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="orders_performance" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
       <p className="text-xs text-slate-500">Monitor AI feature PR volume, AST checks, and merge speed in real time.</p>
       <div className="grid grid-cols-3 gap-2 pt-2 text-center border-t border-slate-100">
@@ -1256,7 +1275,7 @@ function WidgetOrdersPerformance({ integrations, isDemoMode, range, onRemove, on
 }
 
 // 9. Codebase Indexing Trend Widget
-function WidgetTrendAnalysis({ summary, isDemoMode, range, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
+function WidgetTrendAnalysis({ summary, isDemoMode, range, span, onToggleSpan, onRemove, onMoveUp, onMoveDown, onOpenAddDrawer }: { summary: Summary | null; isDemoMode: boolean; range: DateRange; span?: number; onToggleSpan?: (id: string) => void; onRemove?: (id: string) => void; onMoveUp?: (id: string) => void; onMoveDown?: (id: string) => void; onOpenAddDrawer?: () => void }) {
   const hasData = isDemoMode || (summary?.total_calls ?? 0) > 0 || (summary?.daily?.some(d => d.cost_usd > 0) ?? false);
   const dPath = range === '7d' 
     ? "M 0 35 Q 50 15 100 25 T 200 8" 
@@ -1268,7 +1287,7 @@ function WidgetTrendAnalysis({ summary, isDemoMode, range, onRemove, onMoveUp, o
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">Codebase Indexing Trend ({range.toUpperCase()})</h3>
-        <WidgetHeaderMenu widgetId="trend_analysis" onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
+        <WidgetHeaderMenu widgetId="trend_analysis" span={span} onToggleSpan={onToggleSpan} onRemove={onRemove} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onOpenAddDrawer={onOpenAddDrawer} />
       </div>
       <p className="text-xs text-slate-500">Track AST symbol tree indexing velocity and P99 response time trends for {range}.</p>
       {hasData ? (
@@ -1562,6 +1581,34 @@ export default function ClientDashboard() {
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
   const [draggedWidgetId, setDraggedWidgetId] = useState<string | null>(null);
   const [dropTargetWidgetId, setDropTargetWidgetId] = useState<string | null>(null);
+
+  // Widget Column Span state (1 column vs 2 columns) with local storage persistence
+  const [widgetSpans, setWidgetSpans] = useState<Record<string, number>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('branchdeck_widget_spans');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      } catch (e) {
+        console.warn('[Branchdeck] Failed to load widget column spans', e);
+      }
+    }
+    return { total_profit: 2 };
+  });
+
+  const handleToggleWidgetSpan = (widgetId: string) => {
+    setWidgetSpans(prev => {
+      const current = prev[widgetId] || (widgetId === 'total_profit' ? 2 : 1);
+      const nextSpan = current === 1 ? 2 : 1;
+      const updated = { ...prev, [widgetId]: nextSpan };
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('branchdeck_widget_spans', JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
 
   const [activeWidgetIds, setActiveWidgetIds] = useState<string[]>(() => {
     if (typeof window === 'undefined') return WIDGET_CATALOG.map(w => w.id);
@@ -2460,6 +2507,8 @@ export default function ClientDashboard() {
                     {activeWidgetIds.map((id) => {
                       const isDragging = draggedWidgetId === id;
                       const isDropTarget = dropTargetWidgetId === id;
+                      const span = widgetSpans[id] || (id === 'total_profit' ? 2 : 1);
+                      const spanClass = span === 2 ? 'col-span-1 md:col-span-2 lg:col-span-2' : 'col-span-1';
 
                       const widgetContent = (() => {
                         switch (id) {
@@ -2470,6 +2519,8 @@ export default function ClientDashboard() {
                                 integrations={integrations}
                                 isDemoMode={isDemoMode}
                                 range={range}
+                                span={span}
+                                onToggleSpan={handleToggleWidgetSpan}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2483,6 +2534,8 @@ export default function ClientDashboard() {
                                 budgetCap={budgetCap}
                                 isDemoMode={isDemoMode}
                                 range={range}
+                                span={span}
+                                onToggleSpan={handleToggleWidgetSpan}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2495,6 +2548,8 @@ export default function ClientDashboard() {
                                 summary={summary}
                                 isDemoMode={isDemoMode}
                                 range={range}
+                                span={span}
+                                onToggleSpan={handleToggleWidgetSpan}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2507,6 +2562,8 @@ export default function ClientDashboard() {
                                 summary={summary}
                                 isDemoMode={isDemoMode}
                                 range={range}
+                                span={span}
+                                onToggleSpan={handleToggleWidgetSpan}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2519,6 +2576,8 @@ export default function ClientDashboard() {
                                 integrations={integrations}
                                 isDemoMode={isDemoMode}
                                 range={range}
+                                span={span}
+                                onToggleSpan={handleToggleWidgetSpan}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2528,6 +2587,8 @@ export default function ClientDashboard() {
                           case 'ai_assistant':
                             return (
                               <WidgetAiAssistant
+                                span={span}
+                                onToggleSpan={handleToggleWidgetSpan}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2540,6 +2601,8 @@ export default function ClientDashboard() {
                                 summary={summary}
                                 isDemoMode={isDemoMode}
                                 range={range}
+                                span={span}
+                                onToggleSpan={handleToggleWidgetSpan}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2552,6 +2615,8 @@ export default function ClientDashboard() {
                                 integrations={integrations}
                                 isDemoMode={isDemoMode}
                                 range={range}
+                                span={span}
+                                onToggleSpan={handleToggleWidgetSpan}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2564,6 +2629,8 @@ export default function ClientDashboard() {
                                 summary={summary}
                                 isDemoMode={isDemoMode}
                                 range={range}
+                                span={span}
+                                onToggleSpan={handleToggleWidgetSpan}
                                 onRemove={handleRemoveWidget}
                                 onMoveUp={(wId) => handleMoveWidget(wId, 'up')}
                                 onMoveDown={(wId) => handleMoveWidget(wId, 'down')}
@@ -2609,7 +2676,7 @@ export default function ClientDashboard() {
                             setDraggedWidgetId(null);
                             setDropTargetWidgetId(null);
                           }}
-                          className={`group relative transition-all duration-200 col-span-1 ${
+                          className={`group relative transition-all duration-300 ${spanClass} ${
                             isDragging ? 'opacity-40 scale-[0.98]' : 'opacity-100'
                           } ${
                             isDropTarget ? 'ring-2 ring-blue-500 ring-offset-2 rounded-2xl' : ''
@@ -2620,6 +2687,19 @@ export default function ClientDashboard() {
                             <GripVertical className="w-3 h-3 text-slate-300" />
                             <span>Drag to reorder</span>
                           </div>
+
+                          {/* Resizable Right Border Control Handle */}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleWidgetSpan(id);
+                            }}
+                            className="absolute right-0 top-1/2 -translate-y-1/2 h-16 w-2.5 cursor-ew-resize z-30 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center bg-blue-600 text-white rounded-l-md shadow-md hover:w-3.5"
+                            title={span === 2 ? "Click or hold border to contract to 1 column" : "Click or hold border to extend to 2 columns"}
+                          >
+                            <div className="w-0.5 h-8 bg-white/90 rounded-full" />
+                          </button>
 
                           {widgetContent}
                         </div>
