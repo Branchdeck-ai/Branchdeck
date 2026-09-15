@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: branchdeck-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: BRANCHDECK_ENV
+        value: production
+      - key: ALLOW_SQLITE_FALLBACK
+        value: "false"
+      - key: ALLOWED_ORIGINS
+        value: https://branchdeck.vercel.app,http://localhost:3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: branchdeck-db
+          property: connectionString
+
+databases:
+  - name: branchdeck-db
+    databaseName: branchdeck
+    user: postgres
+    plan: free
