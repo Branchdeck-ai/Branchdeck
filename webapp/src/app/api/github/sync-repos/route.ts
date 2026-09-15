@@ -116,7 +116,24 @@ function parsePrivateKeyObject(raw: string): { keyObject: crypto.KeyObject | nul
 }
 
 function loadPrivateKeyObject(): { keyObject: crypto.KeyObject | null; debug: string } {
-  // 1. Try file path from GITHUB_APP_PRIVATE_KEY_PATH or default candidate files
+  // 1. Production / Serverless Deployment: Check explicit env vars FIRST (GITHUB_APP_PRIVATE_KEY or GITHUB_APP_PRIVATE_KEY_B64)
+  const b64Key = process.env.GITHUB_APP_PRIVATE_KEY_B64;
+  if (b64Key) {
+    const { keyObject, debug } = parsePrivateKeyObject(b64Key);
+    if (keyObject) {
+      return { keyObject, debug: `loaded from GITHUB_APP_PRIVATE_KEY_B64 env var -> ${debug}` };
+    }
+  }
+
+  const rawKey = process.env.GITHUB_APP_PRIVATE_KEY;
+  if (rawKey) {
+    const { keyObject, debug } = parsePrivateKeyObject(rawKey);
+    if (keyObject) {
+      return { keyObject, debug: `loaded from GITHUB_APP_PRIVATE_KEY env var -> ${debug}` };
+    }
+  }
+
+  // 2. Local Development: Read key file from disk via GITHUB_APP_PRIVATE_KEY_PATH or local candidate paths
   const keyPathEnv = process.env.GITHUB_APP_PRIVATE_KEY_PATH;
   const cwd = process.cwd();
   const candidates = [
@@ -139,18 +156,9 @@ function loadPrivateKeyObject(): { keyObject: crypto.KeyObject | null; debug: st
     } catch { /* keep trying */ }
   }
 
-  // 2. Fall back to GITHUB_APP_PRIVATE_KEY env var
-  const rawKey = process.env.GITHUB_APP_PRIVATE_KEY;
-  if (rawKey) {
-    const { keyObject, debug } = parsePrivateKeyObject(rawKey);
-    if (keyObject) {
-      return { keyObject, debug: `loaded from GITHUB_APP_PRIVATE_KEY env var -> ${debug}` };
-    }
-  }
-
   return {
     keyObject: null,
-    debug: `Key file not found or invalid. Tried candidates: ${candidates.join(', ')}`,
+    debug: `No valid private key found. Checked serverless env vars (GITHUB_APP_PRIVATE_KEY / GITHUB_APP_PRIVATE_KEY_B64) and local file candidates: ${candidates.join(', ')}`,
   };
 }
 

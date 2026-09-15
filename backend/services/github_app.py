@@ -47,6 +47,20 @@ def normalize_private_key(raw: Optional[str]) -> Optional[str]:
 
 def get_github_app_private_key() -> Optional[str]:
     """Retrieve the RSA private key for the GitHub App."""
+    # 1. Serverless / Production: Check environment variables FIRST
+    b64_key = os.getenv("GITHUB_APP_PRIVATE_KEY_B64")
+    if b64_key:
+        normalized = normalize_private_key(b64_key)
+        if normalized:
+            return normalized
+
+    raw_key = os.getenv("GITHUB_APP_PRIVATE_KEY")
+    if raw_key:
+        normalized = normalize_private_key(raw_key)
+        if normalized:
+            return normalized
+
+    # 2. Local Development: Check file path on disk
     key_path = os.getenv("GITHUB_APP_PRIVATE_KEY_PATH")
     if key_path:
         if not os.path.isabs(key_path):
@@ -55,9 +69,6 @@ def get_github_app_private_key() -> Optional[str]:
         if os.path.exists(key_path):
             with open(key_path, "r", encoding="utf-8") as f:
                 return normalize_private_key(f.read())
-    raw_key = os.getenv("GITHUB_APP_PRIVATE_KEY")
-    if raw_key:
-        return normalize_private_key(raw_key)
     return None
 
 def generate_app_jwt() -> str:
