@@ -178,10 +178,11 @@ def generate_patch_diff(rule_id: str, file_path: str, content: str) -> str:
         if not added:
             modified.insert(0, '// Security Fix: Auth check required\nif (!request.headers.get("authorization")) throw new Error("Unauthorized");')
         
+        joined_diff = '\n+'.join(modified[:10])
         return f"""--- a/{file_path}
 +++ b/{file_path}
 @@ -1,5 +1,9 @@
-+{'\n+'.join(modified[:10])}
++{joined_diff}
 """
 
     elif rule_id == "overly-broad-oauth-scope":
