@@ -20,5 +20,5 @@ services:
 databases:
   - name: branchdeck-db
     databaseName: branchdeck
-    user: postgres
+    user: branchdeck_user
     plan: free
