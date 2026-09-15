@@ -8,11 +8,55 @@ export const runtime = 'nodejs';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID || '4859789';
 
+function normalizePrivateKey(raw: string): string {
+  if (!raw) return '';
+  let key = raw.trim();
+
+  // Strip outer quotes if present ("..." or '...')
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+    key = key.slice(1, -1).trim();
+  }
+
+  // Handle Base64-encoded PEM key if provided
+  if (!key.includes('-----BEGIN') && /^[A-Za-z0-9+/=\s\r\n]+$/.test(key)) {
+    try {
+      const decoded = Buffer.from(key.replace(/\s+/g, ''), 'base64').toString('utf8');
+      if (decoded.includes('-----BEGIN')) {
+        key = decoded.trim();
+      }
+    } catch {
+      /* ignore if not valid base64 */
+    }
+  }
+
+  // Unescape backslash-n and backslash-r
+  key = key.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\r/g, '');
+
+  // Extract header, footer, and re-wrap body in standard 64-character PEM lines
+  const headerMatch = key.match(/(-----BEGIN (?:[A-Z0-9_-]+ )?PRIVATE KEY-----)/);
+  const footerMatch = key.match(/(-----END (?:[A-Z0-9_-]+ )?PRIVATE KEY-----)/);
+
+  if (headerMatch && footerMatch) {
+    const header = headerMatch[1];
+    const footer = footerMatch[1];
+    const headerIdx = key.indexOf(header);
+    const footerIdx = key.indexOf(footer);
+    const rawBody = key.slice(headerIdx + header.length, footerIdx);
+
+    const cleanBody = rawBody.replace(/[^A-Za-z0-9+/=]/g, '');
+    const formattedBody = cleanBody.match(/.{1,64}/g)?.join('\n') || cleanBody;
+
+    return `${header}\n${formattedBody}\n${footer}\n`;
+  }
+
+  return key;
+}
+
 function loadPrivateKey(): { key: string | null; debug: string } {
   // Try env var first (raw PEM string)
   const rawKey = process.env.GITHUB_APP_PRIVATE_KEY;
   if (rawKey) {
-    return { key: rawKey.replace(/\\n/g, '\n'), debug: 'loaded from GITHUB_APP_PRIVATE_KEY env var' };
+    return { key: normalizePrivateKey(rawKey), debug: 'loaded from GITHUB_APP_PRIVATE_KEY env var' };
   }
 
   // Try path-based key
@@ -34,7 +78,7 @@ function loadPrivateKey(): { key: string | null; debug: string } {
     try {
       if (fs.existsSync(candidate)) {
         const content = fs.readFileSync(candidate, 'utf8');
-        return { key: content, debug: `loaded from file: ${candidate}` };
+        return { key: normalizePrivateKey(content), debug: `loaded from file: ${candidate}` };
       }
     } catch { /* keep trying */ }
   }

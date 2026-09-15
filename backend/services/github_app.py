@@ -10,6 +10,41 @@ from fastapi import HTTPException
 
 logger = logging.getLogger("branchdeck.github_app")
 
+def normalize_private_key(raw: Optional[str]) -> Optional[str]:
+    if not raw:
+        return None
+    key = raw.strip()
+    if (key.startswith('"') and key.endswith('"')) or (key.startswith("'") and key.endswith("'")):
+        key = key[1:-1].strip()
+
+    if "-----BEGIN" not in key:
+        try:
+            import base64
+            clean_b64 = "".join(key.split())
+            decoded = base64.b64decode(clean_b64).decode("utf-8", errors="ignore")
+            if "-----BEGIN" in decoded:
+                key = decoded.strip()
+        except Exception:
+            pass
+
+    key = key.replace("\\n", "\n").replace("\\r", "").replace("\r", "")
+
+    import re
+    header_match = re.search(r"(-----BEGIN (?:[A-Z0-9_-]+ )?PRIVATE KEY-----)", key)
+    footer_match = re.search(r"(-----END (?:[A-Z0-9_-]+ )?PRIVATE KEY-----)", key)
+
+    if header_match and footer_match:
+        header = header_match.group(1)
+        footer = footer_match.group(1)
+        header_idx = key.find(header)
+        footer_idx = key.find(footer)
+        raw_body = key[header_idx + len(header):footer_idx]
+        clean_body = re.sub(r"[^A-Za-z0-9+/=]", "", raw_body)
+        formatted_body = "\n".join([clean_body[i:i+64] for i in range(0, len(clean_body), 64)])
+        return f"{header}\n{formatted_body}\n{footer}\n"
+
+    return key
+
 def get_github_app_private_key() -> Optional[str]:
     """Retrieve the RSA private key for the GitHub App."""
     key_path = os.getenv("GITHUB_APP_PRIVATE_KEY_PATH")
@@ -19,10 +54,10 @@ def get_github_app_private_key() -> Optional[str]:
             key_path = os.path.normpath(os.path.join(base_dir, key_path))
         if os.path.exists(key_path):
             with open(key_path, "r", encoding="utf-8") as f:
-                return f.read()
+                return normalize_private_key(f.read())
     raw_key = os.getenv("GITHUB_APP_PRIVATE_KEY")
     if raw_key:
-        return raw_key.replace("\\n", "\n")
+        return normalize_private_key(raw_key)
     return None
 
 def generate_app_jwt() -> str:
