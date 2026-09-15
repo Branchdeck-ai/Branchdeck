@@ -48,6 +48,8 @@ SessionLocal = None
 
 def setup_db(url):
     global engine, SessionLocal
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
     if url.startswith("sqlite"):
         engine = create_engine(url, connect_args={"check_same_thread": False})
     else:
@@ -376,18 +378,19 @@ def init_db():
             _ensure_columns(engine)
             # Create pgvector IVFFlat index on code_chunks.embedding for fast ANN search
             # Runs as IF NOT EXISTS so it is safe to call on every startup
-            if "postgresql" in DATABASE_URL:
+            if "postgresql" in engine.dialect.name or "postgresql" in DATABASE_URL:
                 try:
                     with engine.begin() as conn:
+                        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                         conn.execute(text(
                             "CREATE INDEX IF NOT EXISTS idx_chunks_embedding_ivfflat "
                             "ON code_chunks USING ivfflat (embedding vector_cosine_ops) "
                             "WITH (lists = 100)"
                         ))
-                    logger.info("pgvector IVFFlat index on code_chunks.embedding ensured.")
+                    logger.info("pgvector extension & IVFFlat index on code_chunks.embedding ensured.")
                 except Exception as idx_err:
-                    # pgvector extension may not be installed — log and continue; falls back to seq scan
-                    logger.warning(f"Could not create pgvector IVFFlat index (pgvector not installed?): {idx_err}")
+                    # pgvector extension may not be installed on server — log and continue; falls back to SafeVector / JSON scan
+                    logger.warning(f"Could not create pgvector extension or IVFFlat index (pgvector not installed on server?): {idx_err}")
             return
         except Exception as e:
             logger.error(f"Database initialization attempt {attempt} failed: {e}")
