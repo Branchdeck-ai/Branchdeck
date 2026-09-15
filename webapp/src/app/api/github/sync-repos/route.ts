@@ -116,6 +116,8 @@ function parsePrivateKeyObject(raw: string): { keyObject: crypto.KeyObject | nul
 }
 
 function loadPrivateKeyObject(): { keyObject: crypto.KeyObject | null; debug: string } {
+  const envDebugs: string[] = [];
+
   // 1. Production / Serverless Deployment: Check explicit env vars FIRST (GITHUB_APP_PRIVATE_KEY or GITHUB_APP_PRIVATE_KEY_B64)
   const b64Key = process.env.GITHUB_APP_PRIVATE_KEY_B64;
   if (b64Key) {
@@ -123,6 +125,7 @@ function loadPrivateKeyObject(): { keyObject: crypto.KeyObject | null; debug: st
     if (keyObject) {
       return { keyObject, debug: `loaded from GITHUB_APP_PRIVATE_KEY_B64 env var -> ${debug}` };
     }
+    envDebugs.push(`GITHUB_APP_PRIVATE_KEY_B64 is set (len=${b64Key.length}), but parse failed: ${debug}`);
   }
 
   const rawKey = process.env.GITHUB_APP_PRIVATE_KEY;
@@ -131,6 +134,7 @@ function loadPrivateKeyObject(): { keyObject: crypto.KeyObject | null; debug: st
     if (keyObject) {
       return { keyObject, debug: `loaded from GITHUB_APP_PRIVATE_KEY env var -> ${debug}` };
     }
+    envDebugs.push(`GITHUB_APP_PRIVATE_KEY is set (len=${rawKey.length}), but parse failed: ${debug}`);
   }
 
   // 2. Local Development: Read key file from disk via GITHUB_APP_PRIVATE_KEY_PATH or local candidate paths
@@ -152,13 +156,20 @@ function loadPrivateKeyObject(): { keyObject: crypto.KeyObject | null; debug: st
         if (keyObject) {
           return { keyObject, debug: `loaded from file (${candidate}) -> ${debug}` };
         }
+        envDebugs.push(`File ${candidate} exists (len=${content.length}), but parse failed: ${debug}`);
       }
-    } catch { /* keep trying */ }
+    } catch (err: any) {
+      envDebugs.push(`File ${candidate} read error: ${err.message}`);
+    }
   }
+
+  const envStatusMsg = envDebugs.length > 0
+    ? envDebugs.join(' ; ')
+    : 'Neither GITHUB_APP_PRIVATE_KEY nor GITHUB_APP_PRIVATE_KEY_B64 environment variables are defined in Vercel process.env';
 
   return {
     keyObject: null,
-    debug: `No valid private key found. Checked serverless env vars (GITHUB_APP_PRIVATE_KEY / GITHUB_APP_PRIVATE_KEY_B64) and local file candidates: ${candidates.join(', ')}`,
+    debug: `No valid private key found. Status: [${envStatusMsg}]. Tried local file candidates: ${candidates.join(', ')}`,
   };
 }
 
