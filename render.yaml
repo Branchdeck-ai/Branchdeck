@@ -3,7 +3,7 @@ services:
     name: branchdeck-backend
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerContext: .
     plan: free
     envVars:
       - key: BRANCHDECK_ENV
@@ -16,6 +16,22 @@ services:
         fromDatabase:
           name: branchdeck-db
           property: connectionString
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: BRANCHDECK_ENCRYPTION_KEY
+        sync: false
+      - key: GITHUB_APP_ID
+        value: "4859789"
+      - key: GITHUB_APP_SLUG
+        value: "branchdeck-ai"
+      - key: GITHUB_APP_PRIVATE_KEY_B64
+        sync: false
+      - key: GITHUB_WEBHOOK_SECRET
+        value: "branchdec_6786"
+      - key: NEXT_PUBLIC_APP_URL
+        value: https://branchdeck.vercel.app
 
 databases:
   - name: branchdeck-db
