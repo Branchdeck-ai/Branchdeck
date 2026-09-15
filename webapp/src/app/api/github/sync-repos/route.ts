@@ -8,91 +8,155 @@ export const runtime = 'nodejs';
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 const GITHUB_APP_ID = process.env.GITHUB_APP_ID || '4859789';
 
-function normalizePrivateKey(raw: string): string {
-  if (!raw) return '';
-  let key = raw.trim();
-
-  // Strip outer quotes if present ("..." or '...')
-  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
-    key = key.slice(1, -1).trim();
+function parsePrivateKeyObject(raw: string): { keyObject: crypto.KeyObject | null; debug: string } {
+  if (!raw || typeof raw !== 'string') {
+    return { keyObject: null, debug: 'Raw key is empty or invalid' };
   }
 
-  // Handle Base64-encoded PEM key if provided
-  if (!key.includes('-----BEGIN') && /^[A-Za-z0-9+/=\s\r\n]+$/.test(key)) {
+  const errors: string[] = [];
+  let keyStr = raw.trim();
+
+  // Strip wrapping quotes
+  if ((keyStr.startsWith('"') && keyStr.endsWith('"')) || (keyStr.startsWith("'") && keyStr.endsWith("'"))) {
+    keyStr = keyStr.slice(1, -1).trim();
+  }
+
+  // Strategy 1: As-is
+  try {
+    const k = crypto.createPrivateKey(keyStr);
+    return { keyObject: k, debug: 'Strategy 1 (as-is)' };
+  } catch (e: any) {
+    errors.push(`Strategy 1: ${e.message}`);
+  }
+
+  // Strategy 2: Unescape \n and \r
+  const unescaped = keyStr.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\r/g, '').trim();
+  try {
+    const k = crypto.createPrivateKey(unescaped);
+    return { keyObject: k, debug: 'Strategy 2 (unescaped \\n)' };
+  } catch (e: any) {
+    errors.push(`Strategy 2: ${e.message}`);
+  }
+
+  // Strategy 3: Base64 decode
+  if (!keyStr.includes('-----BEGIN')) {
     try {
-      const decoded = Buffer.from(key.replace(/\s+/g, ''), 'base64').toString('utf8');
-      if (decoded.includes('-----BEGIN')) {
-        key = decoded.trim();
-      }
-    } catch {
-      /* ignore if not valid base64 */
+      const cleanB64 = keyStr.replace(/[\s\r\n]+/g, '');
+      const decoded = Buffer.from(cleanB64, 'base64').toString('utf8').trim();
+      const decodedUnescaped = decoded.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\r/g, '').trim();
+      const k = crypto.createPrivateKey(decodedUnescaped);
+      return { keyObject: k, debug: 'Strategy 3 (Base64 decode)' };
+    } catch (e: any) {
+      errors.push(`Strategy 3: ${e.message}`);
     }
   }
 
-  // Unescape backslash-n and backslash-r
-  key = key.replace(/\\n/g, '\n').replace(/\\r/g, '').replace(/\r/g, '');
-
-  // Extract header, footer, and re-wrap body in standard 64-character PEM lines
-  const headerMatch = key.match(/(-----BEGIN (?:[A-Z0-9_-]+ )?PRIVATE KEY-----)/);
-  const footerMatch = key.match(/(-----END (?:[A-Z0-9_-]+ )?PRIVATE KEY-----)/);
+  // Strategy 4: Full PEM Re-formatting
+  const headerMatch = unescaped.match(/(-----BEGIN (?:[A-Z0-9_-]+ )?PRIVATE KEY-----)/i);
+  const footerMatch = unescaped.match(/(-----END (?:[A-Z0-9_-]+ )?PRIVATE KEY-----)/i);
 
   if (headerMatch && footerMatch) {
-    const header = headerMatch[1];
-    const footer = footerMatch[1];
-    const headerIdx = key.indexOf(header);
-    const footerIdx = key.indexOf(footer);
-    const rawBody = key.slice(headerIdx + header.length, footerIdx);
+    const header = headerMatch[1].toUpperCase();
+    const footer = footerMatch[1].toUpperCase();
+    const headerIdx = unescaped.search(new RegExp(headerMatch[0], 'i'));
+    const footerIdx = unescaped.search(new RegExp(footerMatch[0], 'i'));
 
-    const cleanBody = rawBody.replace(/[^A-Za-z0-9+/=]/g, '');
-    const formattedBody = cleanBody.match(/.{1,64}/g)?.join('\n') || cleanBody;
+    if (headerIdx !== -1 && footerIdx !== -1 && footerIdx > headerIdx) {
+      const rawBody = unescaped.slice(headerIdx + headerMatch[0].length, footerIdx);
+      const cleanBody = rawBody.replace(/[^A-Za-z0-9+/=]/g, '');
+      const chunkedBody = cleanBody.match(/.{1,64}/g)?.join('\n') || cleanBody;
+      const pemFormatted = `${header}\n${chunkedBody}\n${footer}\n`;
 
-    return `${header}\n${formattedBody}\n${footer}\n`;
+      try {
+        const k = crypto.createPrivateKey(pemFormatted);
+        return { keyObject: k, debug: 'Strategy 4 (PEM Re-formatted)' };
+      } catch (e: any) {
+        errors.push(`Strategy 4: ${e.message}`);
+      }
+
+      try {
+        const derBuffer = Buffer.from(cleanBody, 'base64');
+        const k = crypto.createPrivateKey({ key: derBuffer, format: 'der', type: 'pkcs1' });
+        return { keyObject: k, debug: 'Strategy 5 (DER PKCS#1)' };
+      } catch (e: any) {
+        errors.push(`Strategy 5: ${e.message}`);
+      }
+
+      try {
+        const derBuffer = Buffer.from(cleanBody, 'base64');
+        const k = crypto.createPrivateKey({ key: derBuffer, format: 'der', type: 'pkcs8' });
+        return { keyObject: k, debug: 'Strategy 6 (DER PKCS#8)' };
+      } catch (e: any) {
+        errors.push(`Strategy 6: ${e.message}`);
+      }
+    }
   }
 
-  return key;
+  // Strategy 7 & 8: Base64 payload wrapped in headers
+  const pureB64 = keyStr.replace(/[^A-Za-z0-9+/=]/g, '');
+  if (pureB64.length > 100) {
+    const chunked = pureB64.match(/.{1,64}/g)?.join('\n') || pureB64;
+
+    try {
+      const k = crypto.createPrivateKey(`-----BEGIN RSA PRIVATE KEY-----\n${chunked}\n-----END RSA PRIVATE KEY-----\n`);
+      return { keyObject: k, debug: 'Strategy 7 (Wrapped PKCS#1)' };
+    } catch (e: any) {
+      errors.push(`Strategy 7: ${e.message}`);
+    }
+
+    try {
+      const k = crypto.createPrivateKey(`-----BEGIN PRIVATE KEY-----\n${chunked}\n-----END PRIVATE KEY-----\n`);
+      return { keyObject: k, debug: 'Strategy 8 (Wrapped PKCS#8)' };
+    } catch (e: any) {
+      errors.push(`Strategy 8: ${e.message}`);
+    }
+  }
+
+  return { keyObject: null, debug: `Key parsing failed (${errors.join(' | ')})` };
 }
 
-function loadPrivateKey(): { key: string | null; debug: string } {
-  // Try env var first (raw PEM string)
+function loadPrivateKeyObject(): { keyObject: crypto.KeyObject | null; debug: string } {
+  // Try env var first
   const rawKey = process.env.GITHUB_APP_PRIVATE_KEY;
   if (rawKey) {
-    return { key: normalizePrivateKey(rawKey), debug: 'loaded from GITHUB_APP_PRIVATE_KEY env var' };
+    const { keyObject, debug } = parsePrivateKeyObject(rawKey);
+    return { keyObject, debug: `loaded from GITHUB_APP_PRIVATE_KEY env var -> ${debug}` };
   }
 
   // Try path-based key
   const keyPathEnv = process.env.GITHUB_APP_PRIVATE_KEY_PATH;
   if (!keyPathEnv) {
-    return { key: null, debug: 'GITHUB_APP_PRIVATE_KEY_PATH not set' };
+    return { keyObject: null, debug: 'GITHUB_APP_PRIVATE_KEY and GITHUB_APP_PRIVATE_KEY_PATH not set' };
   }
 
-  // Resolve: env value is relative to project root (one level above webapp/)
-  const cwd = process.cwd(); // e.g. .../Branchdeck/webapp
+  const cwd = process.cwd();
   const candidates = [
     path.isAbsolute(keyPathEnv) ? keyPathEnv : null,
-    path.resolve(cwd, '..', keyPathEnv),           // .../Branchdeck/backend/secrets/...
-    path.resolve(cwd, keyPathEnv),                  // .../Branchdeck/webapp/backend/secrets/...
-    path.resolve(cwd, '..', 'backend', 'secrets', 'github-app-key.pem'), // absolute fallback
+    path.resolve(cwd, '..', keyPathEnv),
+    path.resolve(cwd, keyPathEnv),
+    path.resolve(cwd, '..', 'backend', 'secrets', 'github-app-key.pem'),
   ].filter(Boolean) as string[];
 
   for (const candidate of candidates) {
     try {
       if (fs.existsSync(candidate)) {
         const content = fs.readFileSync(candidate, 'utf8');
-        return { key: normalizePrivateKey(content), debug: `loaded from file: ${candidate}` };
+        const { keyObject, debug } = parsePrivateKeyObject(content);
+        return { keyObject, debug: `loaded from file (${candidate}) -> ${debug}` };
       }
     } catch { /* keep trying */ }
   }
 
   return {
-    key: null,
-    debug: `Key file not found. Tried paths:\n${candidates.join('\n')}\ncwd=${cwd}`,
+    keyObject: null,
+    debug: `Key file not found. Tried paths: ${candidates.join(', ')}`,
   };
 }
 
 function generateAppJWT(): { jwt: string | null; debug: string } {
-  const { key: privateKey, debug: keyDebug } = loadPrivateKey();
+  const { keyObject, debug: keyDebug } = loadPrivateKeyObject();
 
-  if (!privateKey) {
+  if (!keyObject) {
     return { jwt: null, debug: `No private key: ${keyDebug}` };
   }
   if (!GITHUB_APP_ID) {
@@ -104,14 +168,14 @@ function generateAppJWT(): { jwt: string | null; debug: string } {
     const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
     const payload = Buffer.from(JSON.stringify({
       iat: now - 60,
-      exp: now + 540, // 9 minutes
+      exp: now + 540,
       iss: GITHUB_APP_ID,
     })).toString('base64url');
 
     const sigInput = `${header}.${payload}`;
     const sign = crypto.createSign('RSA-SHA256');
     sign.update(sigInput);
-    const sig = sign.sign(privateKey).toString('base64url');
+    const sig = sign.sign(keyObject).toString('base64url');
     return { jwt: `${sigInput}.${sig}`, debug: `JWT generated OK. Key source: ${keyDebug}` };
   } catch (e: any) {
     return { jwt: null, debug: `JWT generation failed: ${e.message}. Key source: ${keyDebug}` };
