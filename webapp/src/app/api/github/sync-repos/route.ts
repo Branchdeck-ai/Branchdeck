@@ -116,25 +116,15 @@ function parsePrivateKeyObject(raw: string): { keyObject: crypto.KeyObject | nul
 }
 
 function loadPrivateKeyObject(): { keyObject: crypto.KeyObject | null; debug: string } {
-  // Try env var first
-  const rawKey = process.env.GITHUB_APP_PRIVATE_KEY;
-  if (rawKey) {
-    const { keyObject, debug } = parsePrivateKeyObject(rawKey);
-    return { keyObject, debug: `loaded from GITHUB_APP_PRIVATE_KEY env var -> ${debug}` };
-  }
-
-  // Try path-based key
+  // 1. Try file path from GITHUB_APP_PRIVATE_KEY_PATH or default candidate files
   const keyPathEnv = process.env.GITHUB_APP_PRIVATE_KEY_PATH;
-  if (!keyPathEnv) {
-    return { keyObject: null, debug: 'GITHUB_APP_PRIVATE_KEY and GITHUB_APP_PRIVATE_KEY_PATH not set' };
-  }
-
   const cwd = process.cwd();
   const candidates = [
-    path.isAbsolute(keyPathEnv) ? keyPathEnv : null,
-    path.resolve(cwd, '..', keyPathEnv),
-    path.resolve(cwd, keyPathEnv),
+    keyPathEnv && path.isAbsolute(keyPathEnv) ? keyPathEnv : null,
+    keyPathEnv ? path.resolve(cwd, '..', keyPathEnv) : null,
+    keyPathEnv ? path.resolve(cwd, keyPathEnv) : null,
     path.resolve(cwd, '..', 'backend', 'secrets', 'github-app-key.pem'),
+    path.resolve(cwd, 'backend', 'secrets', 'github-app-key.pem'),
   ].filter(Boolean) as string[];
 
   for (const candidate of candidates) {
@@ -142,14 +132,25 @@ function loadPrivateKeyObject(): { keyObject: crypto.KeyObject | null; debug: st
       if (fs.existsSync(candidate)) {
         const content = fs.readFileSync(candidate, 'utf8');
         const { keyObject, debug } = parsePrivateKeyObject(content);
-        return { keyObject, debug: `loaded from file (${candidate}) -> ${debug}` };
+        if (keyObject) {
+          return { keyObject, debug: `loaded from file (${candidate}) -> ${debug}` };
+        }
       }
     } catch { /* keep trying */ }
   }
 
+  // 2. Fall back to GITHUB_APP_PRIVATE_KEY env var
+  const rawKey = process.env.GITHUB_APP_PRIVATE_KEY;
+  if (rawKey) {
+    const { keyObject, debug } = parsePrivateKeyObject(rawKey);
+    if (keyObject) {
+      return { keyObject, debug: `loaded from GITHUB_APP_PRIVATE_KEY env var -> ${debug}` };
+    }
+  }
+
   return {
     keyObject: null,
-    debug: `Key file not found. Tried paths: ${candidates.join(', ')}`,
+    debug: `Key file not found or invalid. Tried candidates: ${candidates.join(', ')}`,
   };
 }
 
